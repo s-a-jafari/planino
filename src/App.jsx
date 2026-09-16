@@ -1,22 +1,26 @@
 import { useProjects } from './context/ProjectContext';
+import { ProjectForm } from './ProjectForm';
+import { ProjectItem } from './ProjectItem';
 
 function App() {
-  const { projects, addProject, deleteProject } = useProjects();
+  const { projects } = useProjects();
 
   return (
-    <div style={{ padding: '20px', fontFamily: 'sans-serif' }}>
-      <h1>Project Planner 🚀</h1>
+    <div style={{ padding: '20px', fontFamily: 'sans-serif', maxWidth: '600px', margin: '0 auto' }}>
+      <h1>Planino 🚀</h1>
       
+      <ProjectForm />
+
       <h2>Projects List:</h2>
-      <ul>
-        {projects.map((project) => (
-          <li key={project.id} style={{ marginBottom: '15px' }}>
-            <h3>{project.title}</h3>
-            <p>{project.description}</p>
-            <button onClick={() => deleteProject(project.id)}>Delete</button>
-          </li>
-        ))}
-      </ul>
+      {projects.length === 0 ? (
+        <p>No projects available.</p>
+      ) : (
+        <ul style={{ listStyle: 'none', padding: 0 }}>
+          {projects.map((project) => (
+            <ProjectItem key={project.id} project={project} />
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
