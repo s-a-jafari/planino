@@ -35,9 +35,22 @@ export function ProjectProvider({ children }) {
     setProjects(projects.filter((project) => project.id !== projectId));
   };
 
+  // Edit a project
+  const editProject = (id, updatedData) => {
+
+    const updatedProjects = projects.map((project) => {
+      if (project.id === id) {
+        return { ...project, ...updatedData };
+      }
+      return project;
+    });
+
+    setProjects(updatedProjects);
+  };
+
   return (
-    <ProjectContext.Provider value={{ projects, addProject, deleteProject }}>
-      {children}
+    <ProjectContext.Provider value={{ projects, addProject, deleteProject, editProject }}>
+        {children}
     </ProjectContext.Provider>
   );
 }
