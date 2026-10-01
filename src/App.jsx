@@ -5,18 +5,27 @@ import { ProjectModal } from './ProjectModal';
 import { SettingsModal } from './SettingsModal';
 import { SearchModal } from './SearchModal';
 import { ShortcutsModal } from './ShortcutsModal';
+import { ActivityModal } from './ActivityModal';
+import { playTone, triggerConfetti } from './utils/fx';
 
 function App() {
-  const { projects } = useProjects();
+  const { projects, activities, clearActivities, moveProjectStage } = useProjects();
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isShortcutsModalOpen, setIsShortcutsModalOpen] = useState(false);
+  const [isActivityModalOpen, setIsActivityModalOpen] = useState(false);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedTag, setSelectedTag] = useState(null);
   const [sortBy, setSortBy] = useState('newest');
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [highlightedProjectId, setHighlightedProjectId] = useState(null);
+  const [dragOverCol, setDragOverCol] = useState(null);
+
+  const [focusProject, setFocusProject] = useState(null);
+  const [focusSeconds, setFocusSeconds] = useState(25 * 60);
+  const [isFocusActive, setIsFocusActive] = useState(false);
 
   const [settings, setSettings] = useState({
     themeColor: 'indigo',
@@ -26,6 +35,21 @@ function App() {
     isDark: true,
     notifications: true,
   });
+
+  useEffect(() => {
+    let timer = null;
+    if (isFocusActive && focusSeconds > 0) {
+      timer = setInterval(() => {
+        setFocusSeconds((prev) => prev - 1);
+      }, 1000);
+    } else if (focusSeconds === 0 && isFocusActive) {
+      setIsFocusActive(false);
+      playTone('complete');
+      triggerConfetti();
+      alert(`Focus session finished for: ${focusProject ? focusProject.title : 'Task'}! Great job! 🎉`);
+    }
+    return () => clearInterval(timer);
+  }, [isFocusActive, focusSeconds, focusProject]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -38,6 +62,7 @@ function App() {
         setIsProjectModalOpen(false);
         setIsSettingsModalOpen(false);
         setIsShortcutsModalOpen(false);
+        setIsActivityModalOpen(false);
         return;
       }
 
@@ -151,6 +176,28 @@ function App() {
     { id: 'completed', label: 'Completed', color: 'border-emerald-500 text-emerald-500' },
   ];
 
+  const handleDropToColumn = (e, targetStage) => {
+    e.preventDefault();
+    setDragOverCol(null);
+    const projectId = e.dataTransfer.getData('text/plain');
+    if (!projectId) return;
+
+    moveProjectStage(projectId, targetStage);
+
+    if (targetStage === 'completed') {
+      triggerConfetti();
+      playTone('complete');
+    } else {
+      playTone('task');
+    }
+  };
+
+  const formatTimer = (sec) => {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
   return (
     <div
       className={`min-h-screen py-10 px-4 sm:px-8 relative transition-colors duration-300 ${
@@ -187,6 +234,57 @@ function App() {
             </button>
           </div>
         </header>
+
+        {focusProject && (
+          <div
+            className={`mb-6 p-3 rounded-2xl border flex items-center justify-between shadow-lg transition-all animate-in fade-in slide-in-from-top-2 ${
+              settings.isDark ? 'bg-slate-800/90 border-indigo-500/40' : 'bg-white border-indigo-200'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-xl">⏱️</span>
+              <div>
+                <p className="text-xs font-semibold">Focus Session: {focusProject.title}</p>
+                <p className="text-[11px] text-slate-400">Pomodoro Deep Work Mode</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <span className="font-mono text-xl font-bold text-indigo-500">{formatTimer(focusSeconds)}</span>
+
+              <button
+                onClick={() => setIsFocusActive((prev) => !prev)}
+                className={`px-3 py-1 rounded-xl text-xs font-semibold text-white transition-all cursor-pointer ${
+                  isFocusActive ? 'bg-amber-500 hover:bg-amber-600' : 'bg-emerald-600 hover:bg-emerald-700'
+                }`}
+              >
+                {isFocusActive ? 'Pause' : 'Start'}
+              </button>
+
+              <button
+                onClick={() => {
+                  setIsFocusActive(false);
+                  setFocusSeconds(25 * 60);
+                }}
+                className={`px-2 py-1 rounded-xl text-xs font-medium cursor-pointer ${
+                  settings.isDark ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                }`}
+              >
+                Reset
+              </button>
+
+              <button
+                onClick={() => {
+                  setIsFocusActive(false);
+                  setFocusProject(null);
+                }}
+                className="text-slate-400 hover:text-rose-500 text-sm p-1 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
 
         <section className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-8">
           <div
@@ -329,11 +427,21 @@ function App() {
                 const colProjects = filteredAndSortedProjects.filter(
                   (p) => getStage(p) === col.id
                 );
+                const isOver = dragOverCol === col.id;
+
                 return (
                   <div
                     key={col.id}
-                    className={`rounded-2xl border p-4 transition-colors ${
-                      settings.isDark
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setDragOverCol(col.id);
+                    }}
+                    onDragLeave={() => setDragOverCol(null)}
+                    onDrop={(e) => handleDropToColumn(e, col.id)}
+                    className={`rounded-2xl border p-4 transition-all min-h-[350px] ${
+                      isOver
+                        ? 'border-dashed border-indigo-500 scale-[1.01] bg-indigo-500/5'
+                        : settings.isDark
                         ? 'bg-slate-800/40 border-slate-800'
                         : 'bg-slate-100/60 border-slate-200/80'
                     }`}
@@ -362,10 +470,17 @@ function App() {
                           themeColor={settings.themeColor}
                           isHighlighted={project.id === highlightedProjectId}
                           onTagClick={(tag) => setSelectedTag(tag)}
+                          onStartFocus={(p) => {
+                            setFocusProject(p);
+                            setFocusSeconds(25 * 60);
+                            setIsFocusActive(true);
+                          }}
                         />
                       ))}
                       {colProjects.length === 0 && (
-                        <p className="text-center text-xs text-slate-400 py-6 italic">No projects</p>
+                        <div className="flex items-center justify-center py-16 border border-dashed rounded-xl border-slate-700/20 text-xs text-slate-400 italic">
+                          Drop cards here
+                        </div>
                       )}
                     </ul>
                   </div>
@@ -388,6 +503,11 @@ function App() {
                   themeColor={settings.themeColor}
                   isHighlighted={project.id === highlightedProjectId}
                   onTagClick={(tag) => setSelectedTag(tag)}
+                  onStartFocus={(p) => {
+                    setFocusProject(p);
+                    setFocusSeconds(25 * 60);
+                    setIsFocusActive(true);
+                  }}
                 />
               ))}
             </ul>
@@ -401,11 +521,19 @@ function App() {
         }`}
       >
         <button
+          onClick={() => setIsActivityModalOpen(true)}
+          className={`w-10 h-10 rounded-full flex items-center justify-center text-sm transition-all cursor-pointer ${
+            settings.isDark ? 'text-slate-400 hover:text-white hover:bg-slate-700' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
+          }`}
+          title="Activity Log"
+        >
+          📜
+        </button>
+
+        <button
           onClick={() => setIsShortcutsModalOpen(true)}
           className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold transition-all cursor-pointer ${
-            settings.isDark
-              ? 'text-slate-400 hover:text-white hover:bg-slate-700'
-              : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
+            settings.isDark ? 'text-slate-400 hover:text-white hover:bg-slate-700' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
           }`}
           title="Shortcuts (?)"
         >
@@ -415,9 +543,7 @@ function App() {
         <button
           onClick={() => setIsSearchModalOpen(true)}
           className={`w-10 h-10 rounded-full flex items-center justify-center text-sm transition-all cursor-pointer ${
-            settings.isDark
-              ? 'text-slate-400 hover:text-white hover:bg-slate-700'
-              : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
+            settings.isDark ? 'text-slate-400 hover:text-white hover:bg-slate-700' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
           }`}
           title="Search (/ or Alt+K)"
         >
@@ -427,9 +553,7 @@ function App() {
         <button
           onClick={() => setIsSettingsModalOpen(true)}
           className={`w-10 h-10 rounded-full flex items-center justify-center text-sm transition-all hover:rotate-45 cursor-pointer ${
-            settings.isDark
-              ? 'text-slate-400 hover:text-white hover:bg-slate-700'
-              : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
+            settings.isDark ? 'text-slate-400 hover:text-white hover:bg-slate-700' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
           }`}
           title="Settings"
         >
@@ -459,6 +583,14 @@ function App() {
       <ShortcutsModal
         isOpen={isShortcutsModalOpen}
         onClose={() => setIsShortcutsModalOpen(false)}
+        isDark={settings.isDark}
+      />
+
+      <ActivityModal
+        isOpen={isActivityModalOpen}
+        onClose={() => setIsActivityModalOpen(false)}
+        activities={activities}
+        onClear={clearActivities}
         isDark={settings.isDark}
       />
 

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useProjects } from './context/ProjectContext';
 import { playTone, triggerConfetti } from './utils/fx';
 
-export function ProjectItem({ project, isDark, themeColor, isHighlighted, onTagClick }) {
+export function ProjectItem({ project, isDark, themeColor, isHighlighted, onTagClick, onStartFocus }) {
   const [isEditing, setIsEditing] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isTasksExpanded, setIsTasksExpanded] = useState(false);
@@ -180,10 +180,17 @@ export function ProjectItem({ project, isDark, themeColor, isHighlighted, onTagC
 
   const dueStatus = getDueStatus(project.dueDate);
 
+  const handleDragStart = (e) => {
+    e.dataTransfer.setData('text/plain', String(project.id));
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
   return (
     <li
       id={`project-${project.id}`}
-      className={`rounded-2xl border p-5 shadow-sm transition-all duration-300 list-none flex flex-col justify-between relative group hover:-translate-y-1 hover:shadow-xl ${
+      draggable={!isEditing}
+      onDragStart={handleDragStart}
+      className={`rounded-2xl border p-5 shadow-sm transition-all duration-300 list-none flex flex-col justify-between relative group hover:-translate-y-1 hover:shadow-xl cursor-grab active:cursor-grabbing ${
         isFullyCompleted
           ? isDark
             ? 'ring-1 ring-emerald-500/40 bg-slate-800/90 shadow-emerald-500/5'
@@ -394,6 +401,19 @@ export function ProjectItem({ project, isDark, themeColor, isHighlighted, onTagC
                     isDark ? 'bg-slate-800 border-slate-700 text-slate-200' : 'bg-white border-slate-200 text-slate-700'
                   }`}
                 >
+                  <button
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      onStartFocus && onStartFocus(project);
+                    }}
+                    className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg transition-all text-left cursor-pointer ${
+                      isDark ? 'hover:bg-slate-700 hover:text-white' : 'hover:bg-slate-50 hover:text-slate-900'
+                    }`}
+                  >
+                    <span>⏱️</span>
+                    <span>Focus Timer</span>
+                  </button>
+
                   <button
                     onClick={handleStartEdit}
                     className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg transition-all text-left cursor-pointer ${

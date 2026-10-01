@@ -36,6 +36,27 @@ export function ProjectProvider({ children }) {
     },
   ]);
 
+  const [activities, setActivities] = useLocalStorage('planino_activities', [
+    {
+      id: 'init-1',
+      text: 'Workspace loaded',
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    },
+  ]);
+
+  const logActivity = (text) => {
+    const newEntry = {
+      id: Date.now().toString(),
+      text,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
+    setActivities((prev) => [newEntry, ...(Array.isArray(prev) ? prev : [])].slice(0, 40));
+  };
+
+  const clearActivities = () => {
+    setActivities([]);
+  };
+
   const addProject = (title, description, dueDate, priority = 'Medium', tags = []) => {
     const newProject = {
       id: Date.now().toString(),
@@ -53,22 +74,33 @@ export function ProjectProvider({ children }) {
       const safe = Array.isArray(prev) ? prev : [];
       return [newProject, ...safe];
     });
+
+    logActivity(`Created project "${newProject.title}"`);
   };
 
   const togglePinProject = (projectId) => {
     setProjects((prev) => {
       const safe = Array.isArray(prev) ? prev : [];
-      return safe.map((p) =>
-        String(p.id) === String(projectId) ? { ...p, isPinned: !p.isPinned } : p
-      );
+      return safe.map((p) => {
+        if (String(p.id) === String(projectId)) {
+          const nextPinned = !p.isPinned;
+          logActivity(`${nextPinned ? 'Pinned' : 'Unpinned'} "${p.title}"`);
+          return { ...p, isPinned: nextPinned };
+        }
+        return p;
+      });
     });
   };
 
   const deleteProject = (projectId) => {
+    const target = (projects || []).find((p) => String(p.id) === String(projectId));
     setProjects((prev) => {
       const safe = Array.isArray(prev) ? prev : [];
       return safe.filter((p) => String(p.id) !== String(projectId));
     });
+    if (target) {
+      logActivity(`Deleted project "${target.title}"`);
+    }
   };
 
   const cloneProject = (projectId) => {
@@ -91,6 +123,8 @@ export function ProjectProvider({ children }) {
       const safe = Array.isArray(prev) ? prev : [];
       return [cloned, ...safe];
     });
+
+    logActivity(`Duplicated "${target.title}"`);
   };
 
   const editProject = (id, updatedData) => {
@@ -100,6 +134,40 @@ export function ProjectProvider({ children }) {
         String(p.id) === String(id) ? { ...p, ...updatedData } : p
       );
     });
+    logActivity(`Updated project "${updatedData.title || 'details'}"`);
+  };
+
+  const moveProjectStage = (projectId, targetStage) => {
+    let movedTitle = '';
+    setProjects((prev) => {
+      const safe = Array.isArray(prev) ? prev : [];
+      return safe.map((p) => {
+        if (String(p.id) === String(projectId)) {
+          movedTitle = p.title;
+          const currentTasks = p.tasks || [];
+          let updatedTasks = [...currentTasks];
+
+          if (targetStage === 'completed') {
+            updatedTasks = currentTasks.map((t) => ({ ...t, completed: true }));
+          } else if (targetStage === 'todo') {
+            updatedTasks = currentTasks.map((t) => ({ ...t, completed: false }));
+          } else if (targetStage === 'in-progress') {
+            if (currentTasks.length > 0) {
+              updatedTasks = currentTasks.map((t, idx) => ({
+                ...t,
+                completed: idx === 0,
+              }));
+            }
+          }
+          return { ...p, tasks: updatedTasks };
+        }
+        return p;
+      });
+    });
+
+    if (movedTitle) {
+      logActivity(`Moved "${movedTitle}" to ${targetStage}`);
+    }
   };
 
   const addTask = (projectId, taskText) => {
@@ -120,6 +188,7 @@ export function ProjectProvider({ children }) {
         return p;
       });
     });
+    logActivity(`Added task to project`);
   };
 
   const toggleTask = (projectId, taskId) => {
@@ -172,6 +241,7 @@ export function ProjectProvider({ children }) {
   const importProjects = (importedData) => {
     if (Array.isArray(importedData)) {
       setProjects(importedData);
+      logActivity('Imported projects from backup file');
     }
   };
 
@@ -179,11 +249,14 @@ export function ProjectProvider({ children }) {
     <ProjectContext.Provider
       value={{
         projects: Array.isArray(projects) ? projects : [],
+        activities,
+        clearActivities,
         addProject,
         togglePinProject,
         deleteProject,
         cloneProject,
         editProject,
+        moveProjectStage,
         addTask,
         toggleTask,
         deleteTask,
