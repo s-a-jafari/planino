@@ -76,11 +76,6 @@ function App() {
 
   const currentThemeBg = colorClasses[settings.themeColor] || 'bg-indigo-600';
 
-  const gridClass =
-    settings.layout === 'grid'
-      ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
-      : 'flex flex-col gap-4 max-w-2xl mx-auto';
-
   const handleResetData = () => {
     if (window.confirm('Are you sure you want to clear all data?')) {
       localStorage.clear();
@@ -141,6 +136,20 @@ function App() {
       }
       return 0;
     });
+
+  const getStage = (project) => {
+    const total = project.tasks?.length || 0;
+    const completed = project.tasks?.filter((t) => t.completed).length || 0;
+    if (total === 0 || completed === 0) return 'todo';
+    if (completed === total) return 'completed';
+    return 'in-progress';
+  };
+
+  const boardColumns = [
+    { id: 'todo', label: 'To Do', color: 'border-slate-400 text-slate-400' },
+    { id: 'in-progress', label: 'In Progress', color: 'border-blue-500 text-blue-500' },
+    { id: 'completed', label: 'Completed', color: 'border-emerald-500 text-emerald-500' },
+  ];
 
   return (
     <div
@@ -256,22 +265,50 @@ function App() {
             )}
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-slate-400">Sort:</span>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className={`text-xs font-semibold px-3 py-2 rounded-xl outline-none border cursor-pointer ${
-                settings.isDark
-                  ? 'bg-slate-800 border-slate-700 text-white'
-                  : 'bg-white border-slate-200 text-slate-800'
+          <div className="flex items-center gap-3">
+            <div
+              className={`p-1 rounded-xl flex gap-1 ${
+                settings.isDark ? 'bg-slate-800 border border-slate-700' : 'bg-slate-200/60'
               }`}
             >
-              <option value="newest">Newest First</option>
-              <option value="dueDate">Due Date</option>
-              <option value="priority">Priority</option>
-              <option value="progress">Progress Rate</option>
-            </select>
+              {[
+                { id: 'grid', label: 'Grid ▦' },
+                { id: 'board', label: 'Board 📋' },
+                { id: 'list', label: 'List ☰' },
+              ].map((view) => (
+                <button
+                  key={view.id}
+                  onClick={() => setSettings((s) => ({ ...s, layout: view.id }))}
+                  className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                    settings.layout === view.id
+                      ? settings.isDark
+                        ? 'bg-slate-700 text-white shadow-sm'
+                        : 'bg-white text-slate-800 shadow-sm'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  {view.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-slate-400">Sort:</span>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className={`text-xs font-semibold px-3 py-1.5 rounded-xl outline-none border cursor-pointer ${
+                  settings.isDark
+                    ? 'bg-slate-800 border-slate-700 text-white'
+                    : 'bg-white border-slate-200 text-slate-800'
+                }`}
+              >
+                <option value="newest">Newest First</option>
+                <option value="dueDate">Due Date</option>
+                <option value="priority">Priority</option>
+                <option value="progress">Progress Rate</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -286,8 +323,63 @@ function App() {
             >
               <p className="font-medium text-sm">No projects found. Press "N" to create one! 🚀</p>
             </div>
+          ) : settings.layout === 'board' ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+              {boardColumns.map((col) => {
+                const colProjects = filteredAndSortedProjects.filter(
+                  (p) => getStage(p) === col.id
+                );
+                return (
+                  <div
+                    key={col.id}
+                    className={`rounded-2xl border p-4 transition-colors ${
+                      settings.isDark
+                        ? 'bg-slate-800/40 border-slate-800'
+                        : 'bg-slate-100/60 border-slate-200/80'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-700/20">
+                      <span className={`text-xs font-bold uppercase tracking-wider ${col.color}`}>
+                        {col.label}
+                      </span>
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full font-bold ${
+                          settings.isDark
+                            ? 'bg-slate-700 text-slate-300'
+                            : 'bg-white text-slate-700 border border-slate-200'
+                        }`}
+                      >
+                        {colProjects.length}
+                      </span>
+                    </div>
+
+                    <ul className="space-y-4 p-0">
+                      {colProjects.map((project) => (
+                        <ProjectItem
+                          key={project.id}
+                          project={project}
+                          isDark={settings.isDark}
+                          themeColor={settings.themeColor}
+                          isHighlighted={project.id === highlightedProjectId}
+                          onTagClick={(tag) => setSelectedTag(tag)}
+                        />
+                      ))}
+                      {colProjects.length === 0 && (
+                        <p className="text-center text-xs text-slate-400 py-6 italic">No projects</p>
+                      )}
+                    </ul>
+                  </div>
+                );
+              })}
+            </div>
           ) : (
-            <ul className={`${gridClass} p-0`}>
+            <ul
+              className={
+                settings.layout === 'grid'
+                  ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-0'
+                  : 'flex flex-col gap-4 max-w-2xl mx-auto p-0'
+              }
+            >
               {filteredAndSortedProjects.map((project) => (
                 <ProjectItem
                   key={project.id}
@@ -303,13 +395,17 @@ function App() {
         </div>
       </div>
 
-      <div className={`fixed bottom-6 right-6 flex items-center gap-2 p-1.5 rounded-full border shadow-xl backdrop-blur-md z-40 transition-all ${
-        settings.isDark ? 'bg-slate-800/90 border-slate-700' : 'bg-white/90 border-slate-200'
-      }`}>
+      <div
+        className={`fixed bottom-6 right-6 flex items-center gap-2 p-1.5 rounded-full border shadow-xl backdrop-blur-md z-40 transition-all ${
+          settings.isDark ? 'bg-slate-800/90 border-slate-700' : 'bg-white/90 border-slate-200'
+        }`}
+      >
         <button
           onClick={() => setIsShortcutsModalOpen(true)}
           className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold transition-all cursor-pointer ${
-            settings.isDark ? 'text-slate-400 hover:text-white hover:bg-slate-700' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
+            settings.isDark
+              ? 'text-slate-400 hover:text-white hover:bg-slate-700'
+              : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
           }`}
           title="Shortcuts (?)"
         >
@@ -319,7 +415,9 @@ function App() {
         <button
           onClick={() => setIsSearchModalOpen(true)}
           className={`w-10 h-10 rounded-full flex items-center justify-center text-sm transition-all cursor-pointer ${
-            settings.isDark ? 'text-slate-400 hover:text-white hover:bg-slate-700' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
+            settings.isDark
+              ? 'text-slate-400 hover:text-white hover:bg-slate-700'
+              : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
           }`}
           title="Search (/ or Alt+K)"
         >
@@ -329,7 +427,9 @@ function App() {
         <button
           onClick={() => setIsSettingsModalOpen(true)}
           className={`w-10 h-10 rounded-full flex items-center justify-center text-sm transition-all hover:rotate-45 cursor-pointer ${
-            settings.isDark ? 'text-slate-400 hover:text-white hover:bg-slate-700' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
+            settings.isDark
+              ? 'text-slate-400 hover:text-white hover:bg-slate-700'
+              : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
           }`}
           title="Settings"
         >

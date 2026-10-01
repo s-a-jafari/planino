@@ -120,29 +120,28 @@ export function SettingsModal({ isOpen, onClose, settings, onUpdateSettings, onR
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-semibold">Layout Style 📐</p>
-              <p className="text-xs text-slate-400">Choose grid or list view</p>
+              <p className="text-xs text-slate-400">Choose preferred workspace view</p>
             </div>
-            <div className={`p-1 rounded-xl ${settings.isDark ? 'bg-slate-700' : 'bg-slate-100'}`}>
-              <button
-                onClick={() => onUpdateSettings({ ...settings, layout: 'grid' })}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
-                  settings.layout === 'grid'
-                    ? settings.isDark ? 'bg-slate-600 text-white shadow-sm' : 'bg-white text-slate-800 shadow-sm'
-                    : 'text-slate-400'
-                }`}
-              >
-                Grid ▦
-              </button>
-              <button
-                onClick={() => onUpdateSettings({ ...settings, layout: 'list' })}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
-                  settings.layout === 'list'
-                    ? settings.isDark ? 'bg-slate-600 text-white shadow-sm' : 'bg-white text-slate-800 shadow-sm'
-                    : 'text-slate-400'
-                }`}
-              >
-                List ☰
-              </button>
+            <div className={`p-1 rounded-xl flex gap-1 ${settings.isDark ? 'bg-slate-700' : 'bg-slate-100'}`}>
+              {[
+                { id: 'grid', label: 'Grid' },
+                { id: 'board', label: 'Board' },
+                { id: 'list', label: 'List' },
+              ].map((view) => (
+                <button
+                  key={view.id}
+                  onClick={() => onUpdateSettings({ ...settings, layout: view.id })}
+                  className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                    settings.layout === view.id
+                      ? settings.isDark
+                        ? 'bg-slate-600 text-white shadow-sm'
+                        : 'bg-white text-slate-800 shadow-sm'
+                      : 'text-slate-400'
+                  }`}
+                >
+                  {view.label}
+                </button>
+              ))}
             </div>
           </div>
 

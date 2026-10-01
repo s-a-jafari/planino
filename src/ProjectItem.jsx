@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useProjects } from './context/ProjectContext';
+import { playTone, triggerConfetti } from './utils/fx';
 
 export function ProjectItem({ project, isDark, themeColor, isHighlighted, onTagClick }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -97,6 +98,25 @@ export function ProjectItem({ project, isDark, themeColor, isHighlighted, onTagC
     setTaskText('');
   };
 
+  const completedCount = project.tasks?.filter((t) => t.completed).length || 0;
+  const totalTasks = project.tasks?.length || 0;
+  const progressPercentage = totalTasks > 0 ? Math.round((completedCount / totalTasks) * 100) : 0;
+  const isFullyCompleted = totalTasks > 0 && completedCount === totalTasks;
+
+  const handleToggleTask = (taskId, currentlyCompleted) => {
+    toggleTask(project.id, taskId);
+
+    if (!currentlyCompleted) {
+      const willBeCompletedCount = completedCount + 1;
+      if (willBeCompletedCount === totalTasks && totalTasks > 0) {
+        triggerConfetti();
+        playTone('complete');
+      } else {
+        playTone('task');
+      }
+    }
+  };
+
   const handleCopyMarkdown = () => {
     setIsMenuOpen(false);
     const taskList = (project.tasks || [])
@@ -111,11 +131,6 @@ export function ProjectItem({ project, isDark, themeColor, isHighlighted, onTagC
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2000);
   };
-
-  const completedCount = project.tasks?.filter((t) => t.completed).length || 0;
-  const totalTasks = project.tasks?.length || 0;
-  const progressPercentage = totalTasks > 0 ? Math.round((completedCount / totalTasks) * 100) : 0;
-  const isFullyCompleted = totalTasks > 0 && completedCount === totalTasks;
 
   const colorClasses = {
     indigo: 'bg-indigo-600',
@@ -501,7 +516,7 @@ export function ProjectItem({ project, isDark, themeColor, isHighlighted, onTagC
                           <input
                             type="checkbox"
                             checked={task.completed}
-                            onChange={() => toggleTask(project.id, task.id)}
+                            onChange={() => handleToggleTask(task.id, task.completed)}
                             className="w-3.5 h-3.5 rounded border-slate-300 cursor-pointer accent-indigo-600"
                           />
                           <span className={`truncate ${task.completed ? 'line-through opacity-40' : ''}`}>
