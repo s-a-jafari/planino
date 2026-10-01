@@ -1,17 +1,15 @@
 import { createContext, useContext } from 'react';
 import { useLocalStorage } from '../useLocalStorage';
 
-// 1. Create the Context
 const ProjectContext = createContext();
 
-// 2. Create the Provider Component
 export function ProjectProvider({ children }) {
-  // Store projects/tasks in localStorage using our custom hook
   const [projects, setProjects] = useLocalStorage('projects', [
     {
       id: 1,
       title: 'Sample Project 🚀',
       description: 'This is a default sample project.',
+      dueDate: '',
       tasks: [
         { id: 101, title: 'Setup Git Repository', completed: true },
         { id: 102, title: 'Create Context API', completed: false },
@@ -19,43 +17,113 @@ export function ProjectProvider({ children }) {
     },
   ]);
 
-  // Add a new project
-  const addProject = (title, description) => {
+  const addProject = (title, description, dueDate) => {
     const newProject = {
-      id: Date.now(),
-      title,
-      description,
+      id: Date.now().toString(),
+      title: title || '',
+      description: description || '',
+      dueDate: dueDate || '',
+      createdAt: new Date().toISOString(),
       tasks: [],
     };
-    setProjects([...projects, newProject]);
-  };
 
-  // Delete a project
-  const deleteProject = (projectId) => {
-    setProjects(projects.filter((project) => project.id !== projectId));
-  };
-
-  // Edit a project
-  const editProject = (id, updatedData) => {
-
-    const updatedProjects = projects.map((project) => {
-      if (project.id === id) {
-        return { ...project, ...updatedData };
-      }
-      return project;
+    setProjects((prevProjects) => {
+      const safeList = Array.isArray(prevProjects) ? prevProjects : [];
+      return [newProject, ...safeList];
     });
+  };
 
-    setProjects(updatedProjects);
+  const deleteProject = (projectId) => {
+    setProjects((prevProjects) => {
+      const safeList = Array.isArray(prevProjects) ? prevProjects : [];
+      return safeList.filter((project) => String(project.id) !== String(projectId));
+    });
+  };
+
+  const editProject = (id, updatedData) => {
+    setProjects((prevProjects) => {
+      const safeList = Array.isArray(prevProjects) ? prevProjects : [];
+      return safeList.map((project) =>
+        String(project.id) === String(id) ? { ...project, ...updatedData } : project
+      );
+    });
+  };
+
+  const addTask = (projectId, taskText) => {
+    setProjects((prevProjects) => {
+      const safeList = Array.isArray(prevProjects) ? prevProjects : [];
+      return safeList.map((project) => {
+        if (String(project.id) === String(projectId)) {
+          const newTask = {
+            id: Date.now().toString(),
+            text: taskText,
+            completed: false,
+          };
+          return {
+            ...project,
+            tasks: Array.isArray(project.tasks) ? [...project.tasks, newTask] : [newTask],
+          };
+        }
+        return project;
+      });
+    });
+  };
+
+  const toggleTask = (projectId, taskId) => {
+    setProjects((prevProjects) => {
+      const safeList = Array.isArray(prevProjects) ? prevProjects : [];
+      return safeList.map((project) => {
+        if (String(project.id) === String(projectId)) {
+          return {
+            ...project,
+            tasks: (project.tasks || []).map((task) =>
+              String(task.id) === String(taskId)
+                ? { ...task, completed: !task.completed }
+                : task
+            ),
+          };
+        }
+        return project;
+      });
+    });
+  };
+
+  const deleteTask = (projectId, taskId) => {
+    setProjects((prevProjects) => {
+      const safeList = Array.isArray(prevProjects) ? prevProjects : [];
+      return safeList.map((project) => {
+        if (String(project.id) === String(projectId) && project.tasks) {
+          return {
+            ...project,
+            tasks: project.tasks.filter(
+              (task) => String(task.id) !== String(taskId)
+            ),
+          };
+        }
+        return project;
+      });
+    });
   };
 
   return (
-    <ProjectContext.Provider value={{ projects, addProject, deleteProject, editProject }}>
-        {children}
+    <ProjectContext.Provider
+      value={{
+        projects: Array.isArray(projects) ? projects : [],
+        addProject,
+        deleteProject,
+        editProject,
+        addTask,
+        toggleTask,
+        deleteTask,
+      }}
+    >
+      {children}
     </ProjectContext.Provider>
   );
 }
 
-// 3. Custom hook to easily use this context anywhere
 export function useProjects() {
   return useContext(ProjectContext);
 }
+
+export default ProjectContext;
