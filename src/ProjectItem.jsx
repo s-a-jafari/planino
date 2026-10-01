@@ -10,7 +10,16 @@ export function ProjectItem({ project, isDark, themeColor, isHighlighted }) {
   const [tagsInput, setTagsInput] = useState((project.tags || []).join(', '));
   const [taskText, setTaskText] = useState('');
 
-  const { deleteProject, editProject, addTask, toggleTask, deleteTask } = useProjects();
+  const {
+    deleteProject,
+    cloneProject,
+    editProject,
+    addTask,
+    toggleTask,
+    deleteTask,
+    clearCompletedTasks,
+  } = useProjects();
+
   const today = new Date().toISOString().split('T')[0];
 
   useEffect(() => {
@@ -50,8 +59,8 @@ export function ProjectItem({ project, isDark, themeColor, isHighlighted }) {
 
     const parsedTags = tagsInput
       .split(',')
-      .map((tag) => tag.trim())
-      .filter((tag) => tag.length > 0);
+      .map((t) => t.trim())
+      .filter((t) => t.length > 0);
 
     editProject(project.id, {
       title: title.trim(),
@@ -73,6 +82,7 @@ export function ProjectItem({ project, isDark, themeColor, isHighlighted }) {
   const completedCount = project.tasks?.filter((t) => t.completed).length || 0;
   const totalTasks = project.tasks?.length || 0;
   const progressPercentage = totalTasks > 0 ? Math.round((completedCount / totalTasks) * 100) : 0;
+  const isFullyCompleted = totalTasks > 0 && completedCount === totalTasks;
 
   const colorClasses = {
     indigo: 'bg-indigo-600',
@@ -285,6 +295,15 @@ export function ProjectItem({ project, isDark, themeColor, isHighlighted }) {
 
             <div className="flex items-center gap-1 shrink-0">
               <button
+                onClick={() => cloneProject(project.id)}
+                className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                  isDark ? 'text-slate-400 hover:text-white hover:bg-slate-700' : 'text-slate-400 hover:text-indigo-600 hover:bg-indigo-50'
+                }`}
+                title="Clone Project"
+              >
+                📋
+              </button>
+              <button
                 onClick={handleStartEdit}
                 className={`p-1.5 rounded-lg transition-all cursor-pointer ${
                   isDark ? 'text-slate-400 hover:text-white hover:bg-slate-700' : 'text-slate-400 hover:text-indigo-600 hover:bg-indigo-50'
@@ -314,10 +333,16 @@ export function ProjectItem({ project, isDark, themeColor, isHighlighted }) {
             </div>
             <div className={`w-full rounded-full h-2 overflow-hidden ${isDark ? 'bg-slate-700' : 'bg-slate-100'}`}>
               <div
-                className={`${currentThemeBg} h-2 rounded-full transition-all duration-300`}
+                className={`${isFullyCompleted ? 'bg-emerald-500' : currentThemeBg} h-2 rounded-full transition-all duration-300`}
                 style={{ width: `${progressPercentage}%` }}
               />
             </div>
+
+            {isFullyCompleted && (
+              <div className="mt-2 text-center py-1 rounded-lg bg-emerald-500/10 text-emerald-500 text-[11px] font-semibold border border-emerald-500/20">
+                All tasks finished! 🎉
+              </div>
+            )}
           </div>
 
           <div>
@@ -325,6 +350,14 @@ export function ProjectItem({ project, isDark, themeColor, isHighlighted }) {
               <h4 className={`text-xs font-bold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                 Tasks ({completedCount}/{totalTasks})
               </h4>
+              {completedCount > 0 && (
+                <button
+                  onClick={() => clearCompletedTasks(project.id)}
+                  className="text-[10px] text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"
+                >
+                  Clear Done
+                </button>
+              )}
             </div>
 
             <form onSubmit={handleAddTask} className="flex gap-2 mb-3">

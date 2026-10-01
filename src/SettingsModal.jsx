@@ -1,6 +1,10 @@
-import { useState } from 'react';
+import { useRef } from 'react';
+import { useProjects } from './context/ProjectContext';
 
 export function SettingsModal({ isOpen, onClose, settings, onUpdateSettings, onResetData }) {
+  const { projects, importProjects } = useProjects();
+  const fileInputRef = useRef(null);
+
   if (!isOpen) return null;
 
   const colorOptions = [
@@ -11,21 +15,62 @@ export function SettingsModal({ isOpen, onClose, settings, onUpdateSettings, onR
     { name: 'Rose', value: 'rose', bg: 'bg-rose-600' },
   ];
 
+  const handleExportData = () => {
+    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(projects, null, 2));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute('href', dataStr);
+    downloadAnchor.setAttribute('download', `planino-backup-${new Date().toISOString().split('T')[0]}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  };
+
+  const handleImportClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileChange = (e) => {
+    const fileReader = new FileReader();
+    if (e.target.files && e.target.files[0]) {
+      fileReader.readAsText(e.target.files[0], 'UTF-8');
+      fileReader.onload = (event) => {
+        try {
+          const parsed = JSON.parse(event.target.result);
+          if (Array.isArray(parsed)) {
+            importProjects(parsed);
+            alert('Data imported successfully!');
+            onClose();
+          } else {
+            alert('Invalid backup file format');
+          }
+        } catch {
+          alert('Failed to parse JSON file');
+        }
+      };
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-      <div className={`w-full max-w-md rounded-2xl p-6 shadow-2xl border transition-colors max-h-[90vh] overflow-y-auto ${
-        settings.isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-100 text-slate-800'
-      }`}>
-        <div className={`flex items-center justify-between mb-6 pb-3 border-b ${
-          settings.isDark ? 'border-slate-700' : 'border-slate-100'
-        }`}>
+      <div
+        className={`w-full max-w-md rounded-2xl p-6 shadow-2xl border transition-colors max-h-[90vh] overflow-y-auto ${
+          settings.isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-100 text-slate-800'
+        }`}
+      >
+        <div
+          className={`flex items-center justify-between mb-6 pb-3 border-b ${
+            settings.isDark ? 'border-slate-700' : 'border-slate-100'
+          }`}
+        >
           <div className="flex items-center gap-2">
             <span className="text-xl">⚙️</span>
             <h3 className="text-lg font-bold">Preferences & Settings</h3>
           </div>
           <button
             onClick={onClose}
-            className={`text-lg p-1 rounded-lg transition-all ${
+            className={`text-lg p-1 rounded-lg transition-all cursor-pointer ${
               settings.isDark ? 'text-slate-400 hover:text-white hover:bg-slate-700' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
             }`}
           >
@@ -37,11 +82,11 @@ export function SettingsModal({ isOpen, onClose, settings, onUpdateSettings, onR
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-semibold">Dark Mode 🌙</p>
-              <p className="text-xs text-slate-400">High contrast dark theme for low light</p>
+              <p className="text-xs text-slate-400">High contrast dark theme</p>
             </div>
             <button
               onClick={() => onUpdateSettings({ ...settings, isDark: !settings.isDark })}
-              className={`w-12 h-6 rounded-full transition-colors relative p-1 ${
+              className={`w-12 h-6 rounded-full transition-colors relative p-1 cursor-pointer ${
                 settings.isDark ? 'bg-indigo-600' : 'bg-slate-300'
               }`}
             >
@@ -62,7 +107,7 @@ export function SettingsModal({ isOpen, onClose, settings, onUpdateSettings, onR
                 <button
                   key={color.value}
                   onClick={() => onUpdateSettings({ ...settings, themeColor: color.value })}
-                  className={`w-8 h-8 rounded-full ${color.bg} transition-transform flex items-center justify-center text-white text-xs ${
+                  className={`w-8 h-8 rounded-full ${color.bg} transition-transform flex items-center justify-center text-white text-xs cursor-pointer ${
                     settings.themeColor === color.value ? 'ring-4 ring-offset-2 ring-slate-400 scale-110' : 'hover:scale-105'
                   }`}
                 >
@@ -80,7 +125,7 @@ export function SettingsModal({ isOpen, onClose, settings, onUpdateSettings, onR
             <div className={`p-1 rounded-xl ${settings.isDark ? 'bg-slate-700' : 'bg-slate-100'}`}>
               <button
                 onClick={() => onUpdateSettings({ ...settings, layout: 'grid' })}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                   settings.layout === 'grid'
                     ? settings.isDark ? 'bg-slate-600 text-white shadow-sm' : 'bg-white text-slate-800 shadow-sm'
                     : 'text-slate-400'
@@ -90,7 +135,7 @@ export function SettingsModal({ isOpen, onClose, settings, onUpdateSettings, onR
               </button>
               <button
                 onClick={() => onUpdateSettings({ ...settings, layout: 'list' })}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                   settings.layout === 'list'
                     ? settings.isDark ? 'bg-slate-600 text-white shadow-sm' : 'bg-white text-slate-800 shadow-sm'
                     : 'text-slate-400'
@@ -101,46 +146,41 @@ export function SettingsModal({ isOpen, onClose, settings, onUpdateSettings, onR
             </div>
           </div>
 
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-semibold">Enable Notifications 🔔</p>
-              <p className="text-xs text-slate-400">Alerts for task completions</p>
-            </div>
-            <button
-              onClick={() => onUpdateSettings({ ...settings, notifications: !settings.notifications })}
-              className={`w-12 h-6 rounded-full transition-colors relative p-1 ${
-                settings.notifications ? 'bg-indigo-600' : 'bg-slate-300'
-              }`}
-            >
-              <div
-                className={`w-4 h-4 bg-white rounded-full transition-transform ${
-                  settings.notifications ? 'translate-x-6' : 'translate-x-0'
+          <div className={`pt-4 border-t ${settings.isDark ? 'border-slate-700' : 'border-slate-100'} space-y-3`}>
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Data Management</p>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={handleExportData}
+                className={`py-2 px-3 text-xs font-semibold rounded-xl border transition-all cursor-pointer ${
+                  settings.isDark
+                    ? 'border-slate-700 hover:bg-slate-700 text-slate-200'
+                    : 'border-slate-200 hover:bg-slate-100 text-slate-700'
                 }`}
+              >
+                Export JSON 📥
+              </button>
+              <button
+                onClick={handleImportClick}
+                className={`py-2 px-3 text-xs font-semibold rounded-xl border transition-all cursor-pointer ${
+                  settings.isDark
+                    ? 'border-slate-700 hover:bg-slate-700 text-slate-200'
+                    : 'border-slate-200 hover:bg-slate-100 text-slate-700'
+                }`}
+              >
+                Import JSON 📤
+              </button>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                accept=".json"
+                className="hidden"
               />
-            </button>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-semibold">Language 🌐</p>
-              <p className="text-xs text-slate-400">System language</p>
             </div>
-            <select
-              value={settings.language}
-              onChange={(e) => onUpdateSettings({ ...settings, language: e.target.value })}
-              className={`text-xs font-semibold px-3 py-2 rounded-xl outline-none ${
-                settings.isDark ? 'bg-slate-700 text-white' : 'bg-slate-100 text-slate-700'
-              }`}
-            >
-              <option value="en">English (US)</option>
-              <option value="fa">فارسی (Persian)</option>
-            </select>
-          </div>
 
-          <div className={`pt-4 border-t ${settings.isDark ? 'border-slate-700' : 'border-slate-100'}`}>
             <button
               onClick={onResetData}
-              className="w-full py-2 px-4 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 text-xs font-semibold rounded-xl transition-all border border-rose-500/20"
+              className="w-full py-2 px-4 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 text-xs font-semibold rounded-xl transition-all border border-rose-500/20 cursor-pointer"
             >
               Reset Application Data ⚠️
             </button>
@@ -150,7 +190,7 @@ export function SettingsModal({ isOpen, onClose, settings, onUpdateSettings, onR
         <div className={`mt-6 pt-4 border-t flex justify-end ${settings.isDark ? 'border-slate-700' : 'border-slate-100'}`}>
           <button
             onClick={onClose}
-            className="px-5 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all shadow-md"
+            className="px-5 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all shadow-md cursor-pointer"
           >
             Save & Close
           </button>
@@ -159,3 +199,5 @@ export function SettingsModal({ isOpen, onClose, settings, onUpdateSettings, onR
     </div>
   );
 }
+
+export default SettingsModal;

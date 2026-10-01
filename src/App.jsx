@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useProjects } from './context/ProjectContext';
 import { ProjectItem } from './ProjectItem';
 import { ProjectModal } from './ProjectModal';
@@ -23,6 +23,32 @@ function App() {
     isDark: true,
     notifications: true,
   });
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      const isInputActive =
+        ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName) ||
+        document.activeElement?.isContentEditable;
+
+      if (e.key === 'Escape') {
+        setIsSearchModalOpen(false);
+        setIsProjectModalOpen(false);
+        setIsSettingsModalOpen(false);
+        return;
+      }
+
+      if (
+        (e.code === 'KeyK' && (e.altKey || e.ctrlKey || e.metaKey)) ||
+        (e.key === '/' && !isInputActive)
+      ) {
+        e.preventDefault();
+        setIsSearchModalOpen((prev) => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const colorClasses = {
     indigo: 'bg-indigo-600',
@@ -246,7 +272,7 @@ function App() {
             ? 'bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700'
             : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
         }`}
-        title="Search"
+        title="Search (/ or Alt+K)"
       >
         🔍
       </button>

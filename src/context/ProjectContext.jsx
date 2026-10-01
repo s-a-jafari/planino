@@ -59,6 +59,27 @@ export function ProjectProvider({ children }) {
     });
   };
 
+  const cloneProject = (projectId) => {
+    const target = projects.find((p) => String(p.id) === String(projectId));
+    if (!target) return;
+
+    const cloned = {
+      ...target,
+      id: Date.now().toString(),
+      title: `${target.title} (Copy)`,
+      createdAt: new Date().toISOString(),
+      tasks: (target.tasks || []).map((t, idx) => ({
+        ...t,
+        id: `${Date.now()}-${idx}`,
+      })),
+    };
+
+    setProjects((prev) => {
+      const safe = Array.isArray(prev) ? prev : [];
+      return [cloned, ...safe];
+    });
+  };
+
   const editProject = (id, updatedData) => {
     setProjects((prev) => {
       const safe = Array.isArray(prev) ? prev : [];
@@ -120,16 +141,40 @@ export function ProjectProvider({ children }) {
     });
   };
 
+  const clearCompletedTasks = (projectId) => {
+    setProjects((prev) => {
+      const safe = Array.isArray(prev) ? prev : [];
+      return safe.map((p) => {
+        if (String(p.id) === String(projectId) && p.tasks) {
+          return {
+            ...p,
+            tasks: p.tasks.filter((t) => !t.completed),
+          };
+        }
+        return p;
+      });
+    });
+  };
+
+  const importProjects = (importedData) => {
+    if (Array.isArray(importedData)) {
+      setProjects(importedData);
+    }
+  };
+
   return (
     <ProjectContext.Provider
       value={{
         projects: Array.isArray(projects) ? projects : [],
         addProject,
         deleteProject,
+        cloneProject,
         editProject,
         addTask,
         toggleTask,
         deleteTask,
+        clearCompletedTasks,
+        importProjects,
       }}
     >
       {children}
