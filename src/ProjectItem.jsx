@@ -5,6 +5,7 @@ import { playTone, triggerConfetti } from './utils/fx';
 export function ProjectItem({ project, isDark, themeColor, isHighlighted, onTagClick, onStartFocus }) {
   const [isEditing, setIsEditing] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [openUpward, setOpenUpward] = useState(false);
   const [isTasksExpanded, setIsTasksExpanded] = useState(false);
   const [title, setTitle] = useState(project.title);
   const [description, setDescription] = useState(project.description || '');
@@ -47,6 +48,15 @@ export function ProjectItem({ project, isDark, themeColor, isHighlighted, onTagC
     }
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isMenuOpen]);
+
+  const handleToggleMenu = () => {
+    if (!isMenuOpen && menuRef.current) {
+      const rect = menuRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      setOpenUpward(spaceBelow < 230);
+    }
+    setIsMenuOpen((prev) => !prev);
+  };
 
   const handleStartEdit = () => {
     setIsMenuOpen(false);
@@ -190,7 +200,7 @@ export function ProjectItem({ project, isDark, themeColor, isHighlighted, onTagC
       id={`project-${project.id}`}
       draggable={!isEditing}
       onDragStart={handleDragStart}
-      className={`rounded-2xl border p-5 shadow-sm transition-all duration-300 list-none flex flex-col justify-between relative group hover:-translate-y-1 hover:shadow-xl cursor-grab active:cursor-grabbing ${
+      className={`rounded-2xl border p-4 sm:p-5 shadow-sm transition-all duration-300 list-none flex flex-col justify-between relative group hover:-translate-y-1 hover:shadow-xl cursor-grab active:cursor-grabbing ${
         isFullyCompleted
           ? isDark
             ? 'ring-1 ring-emerald-500/40 bg-slate-800/90 shadow-emerald-500/5'
@@ -383,7 +393,7 @@ export function ProjectItem({ project, isDark, themeColor, isHighlighted, onTagC
                 </button>
 
                 <button
-                  onClick={() => setIsMenuOpen((prev) => !prev)}
+                  onClick={handleToggleMenu}
                   className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all cursor-pointer ${
                     isDark
                       ? 'text-slate-400 hover:text-white hover:bg-slate-700'
@@ -397,8 +407,10 @@ export function ProjectItem({ project, isDark, themeColor, isHighlighted, onTagC
 
               {isMenuOpen && (
                 <div
-                  className={`absolute right-0 top-8 w-44 rounded-xl shadow-xl border p-1 z-30 animate-in fade-in zoom-in-95 duration-150 ${
-                    isDark ? 'bg-slate-800 border-slate-700 text-slate-200' : 'bg-white border-slate-200 text-slate-700'
+                  className={`absolute right-0 ${
+                    openUpward ? 'bottom-8' : 'top-8'
+                  } w-44 rounded-xl shadow-2xl border p-1 z-30 animate-in fade-in zoom-in-95 duration-150 ${
+                    isDark ? 'bg-slate-800 border-slate-700 text-slate-200 shadow-black/60' : 'bg-white border-slate-200 text-slate-700 shadow-slate-300/60'
                   }`}
                 >
                   <button
@@ -410,7 +422,7 @@ export function ProjectItem({ project, isDark, themeColor, isHighlighted, onTagC
                       isDark ? 'hover:bg-slate-700 hover:text-white' : 'hover:bg-slate-50 hover:text-slate-900'
                     }`}
                   >
-                    <span>⏱️</span>
+                    <span>⏱️️</span>
                     <span>Focus Timer</span>
                   </button>
 

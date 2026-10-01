@@ -33,6 +33,7 @@ function App() {
   const [highlightedProjectId, setHighlightedProjectId] = useState(null);
   const [dragOverCol, setDragOverCol] = useState(null);
   const [isZenMode, setIsZenMode] = useState(false);
+  const [showStats, setShowStats] = useState(true);
 
   const [toastMessage, setToastMessage] = useState(null);
 
@@ -377,7 +378,7 @@ function App() {
 
       <div className={isZenMode ? 'w-full' : 'max-w-6xl mx-auto'}>
         <header
-          className={`flex items-center justify-between mb-6 pb-4 border-b ${
+          className={`flex items-center justify-between mb-5 pb-4 border-b ${
             settings.isDark ? 'border-slate-800' : 'border-slate-200'
           }`}
         >
@@ -400,7 +401,7 @@ function App() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsZenMode((prev) => !prev)}
-              className={`p-2 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
+              className={`px-3 py-2 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
                 isZenMode
                   ? 'bg-amber-500/10 text-amber-500 border-amber-500/20'
                   : settings.isDark
@@ -414,7 +415,7 @@ function App() {
 
             <button
               onClick={() => setIsProjectModalOpen(true)}
-              className={`flex items-center gap-2 ${currentThemeBg} hover:opacity-90 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-md transition-all cursor-pointer`}
+              className={`flex items-center gap-2 ${currentThemeBg} hover:opacity-90 text-white text-xs font-semibold px-4 py-2 rounded-xl shadow-md transition-all cursor-pointer`}
             >
               <span>+ New Project</span>
               <kbd className="px-1.5 py-0.5 rounded text-[10px] bg-white/20 font-mono">N</kbd>
@@ -424,7 +425,7 @@ function App() {
 
         {focusProject && (
           <div
-            className={`mb-6 p-3 rounded-2xl border flex items-center justify-between shadow-lg transition-all animate-in fade-in slide-in-from-top-2 ${
+            className={`mb-5 p-3 rounded-2xl border flex items-center justify-between shadow-lg transition-all animate-in fade-in slide-in-from-top-2 ${
               settings.isDark ? 'bg-slate-800/90 border-indigo-500/40' : 'bg-white border-indigo-200'
             }`}
           >
@@ -473,49 +474,49 @@ function App() {
           </div>
         )}
 
-        {!isZenMode && (
-          <section className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
+        {!isZenMode && showStats && (
+          <section className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-5 animate-in fade-in duration-200">
             <div
-              className={`p-4 rounded-2xl border transition-all ${
+              className={`p-3.5 rounded-2xl border transition-all ${
                 settings.isDark ? 'bg-slate-800/60 border-slate-700/60' : 'bg-white border-slate-200'
               }`}
             >
-              <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Total Projects</p>
-              <p className="text-2xl font-black mt-1">{totalProjects}</p>
+              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Total Projects</p>
+              <p className="text-xl sm:text-2xl font-black mt-0.5">{totalProjects}</p>
             </div>
 
             <div
-              className={`p-4 rounded-2xl border transition-all ${
+              className={`p-3.5 rounded-2xl border transition-all ${
                 settings.isDark ? 'bg-slate-800/60 border-slate-700/60' : 'bg-white border-slate-200'
               }`}
             >
-              <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Total Tasks</p>
-              <p className="text-2xl font-black mt-1">{totalTasks}</p>
+              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Total Tasks</p>
+              <p className="text-xl sm:text-2xl font-black mt-0.5">{totalTasks}</p>
             </div>
 
             <div
-              className={`p-4 rounded-2xl border transition-all ${
+              className={`p-3.5 rounded-2xl border transition-all ${
                 settings.isDark ? 'bg-slate-800/60 border-slate-700/60' : 'bg-white border-slate-200'
               }`}
             >
-              <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Completed Tasks</p>
-              <p className="text-2xl font-black mt-1 text-emerald-500">{totalCompletedTasks}</p>
+              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Completed Tasks</p>
+              <p className="text-xl sm:text-2xl font-black mt-0.5 text-emerald-500">{totalCompletedTasks}</p>
             </div>
 
             <div
-              className={`p-4 rounded-2xl border transition-all ${
+              className={`p-3.5 rounded-2xl border transition-all ${
                 settings.isDark ? 'bg-slate-800/60 border-slate-700/60' : 'bg-white border-slate-200'
               }`}
             >
-              <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Overdue Alerts</p>
-              <p className={`text-2xl font-black mt-1 ${overdueCount > 0 ? 'text-rose-500' : 'text-slate-400'}`}>
+              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Overdue Alerts</p>
+              <p className={`text-xl sm:text-2xl font-black mt-0.5 ${overdueCount > 0 ? 'text-rose-500' : 'text-slate-400'}`}>
                 {overdueCount}
               </p>
             </div>
           </section>
         )}
 
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-6">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 mb-5 p-2 rounded-2xl border transition-colors bg-opacity-50">
           <div className="flex flex-wrap items-center gap-2">
             <div
               className={`p-1 rounded-xl flex gap-1 ${
@@ -539,34 +540,24 @@ function App() {
               ))}
             </div>
 
-            <div
-              className={`p-1 rounded-xl flex items-center gap-1 ${
-                settings.isDark ? 'bg-slate-800/50 border border-slate-700/50' : 'bg-slate-100'
+            <select
+              value={smartFilter}
+              onChange={(e) => setSmartFilter(e.target.value)}
+              className={`text-xs font-semibold px-3 py-1.5 rounded-xl border outline-none cursor-pointer ${
+                settings.isDark
+                  ? 'bg-slate-800 border-slate-700 text-slate-300'
+                  : 'bg-white border-slate-200 text-slate-700'
               }`}
             >
-              {[
-                { id: 'all', label: 'All' },
-                { id: 'pinned', label: '⭐ Pinned' },
-                { id: 'urgent', label: '🔥 Urgent' },
-                { id: 'overdue', label: '⚠️ Overdue' },
-                { id: 'dueSoon', label: '⏳ Due Soon' },
-              ].map((chip) => (
-                <button
-                  key={chip.id}
-                  onClick={() => setSmartFilter(chip.id)}
-                  className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg transition-all cursor-pointer ${
-                    smartFilter === chip.id
-                      ? 'bg-indigo-600 text-white shadow-sm'
-                      : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  {chip.label}
-                </button>
-              ))}
-            </div>
+              <option value="all">Filter: None</option>
+              <option value="pinned">⭐ Pinned Only</option>
+              <option value="urgent">🔥 Urgent Only</option>
+              <option value="overdue">⚠️ Overdue Only</option>
+              <option value="dueSoon">⏳ Due Soon (3 days)</option>
+            </select>
 
             {selectedTag && (
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 text-xs font-semibold">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 text-xs font-semibold">
                 <span>#{selectedTag}</span>
                 <button
                   onClick={() => setSelectedTag(null)}
@@ -578,50 +569,62 @@ function App() {
             )}
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between md:justify-end gap-2.5">
+            {!isZenMode && (
+              <button
+                onClick={() => setShowStats((prev) => !prev)}
+                className={`p-1.5 px-2.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+                  showStats
+                    ? settings.isDark ? 'border-slate-700 text-slate-300' : 'border-slate-200 text-slate-600'
+                    : 'border-indigo-500/30 text-indigo-500 bg-indigo-500/10'
+                }`}
+                title="Toggle Stats Bar"
+              >
+                📊
+              </button>
+            )}
+
             <div
               className={`p-1 rounded-xl flex gap-1 ${
                 settings.isDark ? 'bg-slate-800 border border-slate-700' : 'bg-slate-200/60'
               }`}
             >
               {[
-                { id: 'grid', label: 'Grid ▦' },
-                { id: 'board', label: 'Board 📋' },
-                { id: 'list', label: 'List ☰' },
+                { id: 'grid', label: '▦' },
+                { id: 'board', label: '📋' },
+                { id: 'list', label: '☰' },
               ].map((view) => (
                 <button
                   key={view.id}
                   onClick={() => setSettings((s) => ({ ...s, layout: view.id }))}
-                  className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                  className={`w-7 h-7 flex items-center justify-center text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                     settings.layout === view.id
                       ? settings.isDark
                         ? 'bg-slate-700 text-white shadow-sm'
                         : 'bg-white text-slate-800 shadow-sm'
                       : 'text-slate-400 hover:text-slate-200'
                   }`}
+                  title={`${view.id.toUpperCase()} View`}
                 >
                   {view.label}
                 </button>
               ))}
             </div>
 
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-slate-400">Sort:</span>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className={`text-xs font-semibold px-3 py-1.5 rounded-xl outline-none border cursor-pointer ${
-                  settings.isDark
-                    ? 'bg-slate-800 border-slate-700 text-white'
-                    : 'bg-white border-slate-200 text-slate-800'
-                }`}
-              >
-                <option value="newest">Newest First</option>
-                <option value="dueDate">Due Date</option>
-                <option value="priority">Priority</option>
-                <option value="progress">Progress Rate</option>
-              </select>
-            </div>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className={`text-xs font-semibold px-3 py-1.5 rounded-xl outline-none border cursor-pointer ${
+                settings.isDark
+                  ? 'bg-slate-800 border-slate-700 text-white'
+                  : 'bg-white border-slate-200 text-slate-800'
+              }`}
+            >
+              <option value="newest">Sort: Newest</option>
+              <option value="dueDate">Sort: Due Date</option>
+              <option value="priority">Sort: Priority</option>
+              <option value="progress">Sort: Progress</option>
+            </select>
           </div>
         </div>
 
@@ -655,7 +658,7 @@ function App() {
               </div>
             </div>
           ) : settings.layout === 'board' ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-start">
               {boardColumns.map((col) => {
                 const colProjects = filteredAndSortedProjects.filter(
                   (p) => getStage(p) === col.id
@@ -671,7 +674,7 @@ function App() {
                     }}
                     onDragLeave={() => setDragOverCol(null)}
                     onDrop={(e) => handleDropToColumn(e, col.id)}
-                    className={`rounded-2xl border p-4 transition-all min-h-[350px] ${
+                    className={`rounded-2xl border p-3.5 transition-all min-h-[350px] ${
                       isOver
                         ? 'border-dashed border-indigo-500 scale-[1.01] bg-indigo-500/5'
                         : settings.isDark
@@ -679,7 +682,7 @@ function App() {
                         : 'bg-slate-100/60 border-slate-200/80'
                     }`}
                   >
-                    <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-700/20">
+                    <div className="flex items-center justify-between mb-3.5 pb-2 border-b border-slate-700/20">
                       <span className={`text-xs font-bold uppercase tracking-wider ${col.color}`}>
                         {col.label}
                       </span>
@@ -694,7 +697,7 @@ function App() {
                       </span>
                     </div>
 
-                    <ul className="space-y-4 p-0">
+                    <ul className="space-y-3.5 p-0">
                       {colProjects.map((project) => (
                         <ProjectItem
                           key={project.id}
@@ -724,8 +727,8 @@ function App() {
             <ul
               className={
                 settings.layout === 'grid'
-                  ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-0'
-                  : 'flex flex-col gap-4 max-w-2xl mx-auto p-0'
+                  ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 p-0'
+                  : 'flex flex-col gap-3.5 max-w-2xl mx-auto p-0'
               }
             >
               {filteredAndSortedProjects.map((project) => (
@@ -749,23 +752,13 @@ function App() {
       </div>
 
       <div
-        className={`fixed bottom-6 right-6 flex items-center gap-2 p-1.5 rounded-full border shadow-xl backdrop-blur-md z-40 transition-all ${
-          settings.isDark ? 'bg-slate-800/90 border-slate-700' : 'bg-white/90 border-slate-200'
+        className={`fixed bottom-6 right-6 flex flex-col items-center gap-1.5 p-1.5 rounded-2xl border shadow-2xl backdrop-blur-md z-40 transition-all ${
+          settings.isDark ? 'bg-slate-800/95 border-slate-700 shadow-black/40' : 'bg-white/95 border-slate-200 shadow-slate-300/60'
         }`}
       >
         <button
-          onClick={() => setIsZenMode((prev) => !prev)}
-          className={`w-10 h-10 rounded-full flex items-center justify-center text-sm transition-all cursor-pointer ${
-            isZenMode ? 'text-amber-400' : settings.isDark ? 'text-slate-400 hover:text-white hover:bg-slate-700' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
-          }`}
-          title="Toggle Zen Mode"
-        >
-          🧘
-        </button>
-
-        <button
           onClick={() => setIsActivityModalOpen(true)}
-          className={`w-10 h-10 rounded-full flex items-center justify-center text-sm transition-all cursor-pointer ${
+          className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm transition-all cursor-pointer ${
             settings.isDark ? 'text-slate-400 hover:text-white hover:bg-slate-700' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
           }`}
           title="Activity Log"
@@ -775,7 +768,7 @@ function App() {
 
         <button
           onClick={() => setIsShortcutsModalOpen(true)}
-          className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold transition-all cursor-pointer ${
+          className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold transition-all cursor-pointer ${
             settings.isDark ? 'text-slate-400 hover:text-white hover:bg-slate-700' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
           }`}
           title="Shortcuts (?)"
@@ -785,7 +778,7 @@ function App() {
 
         <button
           onClick={() => setIsSearchModalOpen(true)}
-          className={`w-10 h-10 rounded-full flex items-center justify-center text-sm transition-all cursor-pointer ${
+          className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm transition-all cursor-pointer ${
             settings.isDark ? 'text-slate-400 hover:text-white hover:bg-slate-700' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
           }`}
           title="Command Palette (/ or Alt+K)"
@@ -795,7 +788,7 @@ function App() {
 
         <button
           onClick={() => setIsSettingsModalOpen(true)}
-          className={`w-10 h-10 rounded-full flex items-center justify-center text-sm transition-all hover:rotate-45 cursor-pointer ${
+          className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm transition-all hover:rotate-45 cursor-pointer ${
             settings.isDark ? 'text-slate-400 hover:text-white hover:bg-slate-700' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
           }`}
           title="Settings"
