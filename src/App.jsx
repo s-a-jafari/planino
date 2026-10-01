@@ -6,6 +6,7 @@ import { SettingsModal } from './SettingsModal';
 import { SearchModal } from './SearchModal';
 import { ShortcutsModal } from './ShortcutsModal';
 import { ActivityModal } from './ActivityModal';
+import { ProjectDetailModal } from './ProjectDetailModal';
 import { playTone, triggerConfetti } from './utils/fx';
 
 function App() {
@@ -23,6 +24,7 @@ function App() {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isShortcutsModalOpen, setIsShortcutsModalOpen] = useState(false);
   const [isActivityModalOpen, setIsActivityModalOpen] = useState(false);
+  const [selectedDetailProjectId, setSelectedDetailProjectId] = useState(null);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -103,6 +105,7 @@ function App() {
         setIsSettingsModalOpen(false);
         setIsShortcutsModalOpen(false);
         setIsActivityModalOpen(false);
+        setSelectedDetailProjectId(null);
         return;
       }
 
@@ -415,7 +418,7 @@ function App() {
 
             <button
               onClick={() => setIsProjectModalOpen(true)}
-              className={`flex items-center gap-2 ${currentThemeBg} hover:opacity-90 text-white text-xs font-semibold px-4 py-2 rounded-xl shadow-md transition-all cursor-pointer`}
+              className={`flex items-center gap-2 ${currentThemeBg} hover:opacity-90 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-md transition-all cursor-pointer`}
             >
               <span>+ New Project</span>
               <kbd className="px-1.5 py-0.5 rounded text-[10px] bg-white/20 font-mono">N</kbd>
@@ -711,6 +714,7 @@ function App() {
                             setFocusSeconds(25 * 60);
                             setIsFocusActive(true);
                           }}
+                          onOpenDetail={(id) => setSelectedDetailProjectId(id)}
                         />
                       ))}
                       {colProjects.length === 0 && (
@@ -744,6 +748,7 @@ function App() {
                     setFocusSeconds(25 * 60);
                     setIsFocusActive(true);
                   }}
+                  onOpenDetail={(id) => setSelectedDetailProjectId(id)}
                 />
               ))}
             </ul>
@@ -815,6 +820,19 @@ function App() {
         }}
         isDark={settings.isDark}
         onExecuteCommand={handleExecuteCommand}
+      />
+
+      <ProjectDetailModal
+        isOpen={Boolean(selectedDetailProjectId)}
+        onClose={() => setSelectedDetailProjectId(null)}
+        projectId={selectedDetailProjectId}
+        isDark={settings.isDark}
+        themeColor={settings.themeColor}
+        onStartFocus={(p) => {
+          setFocusProject(p);
+          setFocusSeconds(25 * 60);
+          setIsFocusActive(true);
+        }}
       />
 
       <ShortcutsModal

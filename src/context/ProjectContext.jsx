@@ -204,6 +204,23 @@ export function ProjectProvider({ children }) {
     logActivity(`Added task to project`);
   };
 
+  const editTask = (projectId, taskId, newText) => {
+    setProjects((prev) => {
+      const safe = Array.isArray(prev) ? prev : [];
+      return safe.map((p) => {
+        if (String(p.id) === String(projectId)) {
+          return {
+            ...p,
+            tasks: (p.tasks || []).map((t) =>
+              String(t.id) === String(taskId) ? { ...t, text: newText } : t
+            ),
+          };
+        }
+        return p;
+      });
+    });
+  };
+
   const toggleTask = (projectId, taskId) => {
     setProjects((prev) => {
       const safe = Array.isArray(prev) ? prev : [];
@@ -273,6 +290,7 @@ export function ProjectProvider({ children }) {
         editProject,
         moveProjectStage,
         addTask,
+        editTask,
         toggleTask,
         deleteTask,
         clearCompletedTasks,

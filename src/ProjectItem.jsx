@@ -2,16 +2,10 @@ import { useState, useEffect, useRef } from 'react';
 import { useProjects } from './context/ProjectContext';
 import { playTone, triggerConfetti } from './utils/fx';
 
-export function ProjectItem({ project, isDark, themeColor, isHighlighted, onTagClick, onStartFocus }) {
-  const [isEditing, setIsEditing] = useState(false);
+export function ProjectItem({ project, isDark, themeColor, isHighlighted, onTagClick, onStartFocus, onOpenDetail }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [openUpward, setOpenUpward] = useState(false);
   const [isTasksExpanded, setIsTasksExpanded] = useState(false);
-  const [title, setTitle] = useState(project.title);
-  const [description, setDescription] = useState(project.description || '');
-  const [dueDate, setDueDate] = useState(project.dueDate || '');
-  const [priority, setPriority] = useState(project.priority || 'Medium');
-  const [tagsInput, setTagsInput] = useState((project.tags || []).join(', '));
   const [taskText, setTaskText] = useState('');
   const [isCopied, setIsCopied] = useState(false);
 
@@ -20,7 +14,6 @@ export function ProjectItem({ project, isDark, themeColor, isHighlighted, onTagC
     deleteProject,
     cloneProject,
     togglePinProject,
-    editProject,
     addTask,
     toggleTask,
     deleteTask,
@@ -28,14 +21,6 @@ export function ProjectItem({ project, isDark, themeColor, isHighlighted, onTagC
   } = useProjects();
 
   const today = new Date().toISOString().split('T')[0];
-
-  useEffect(() => {
-    setTitle(project.title);
-    setDescription(project.description || '');
-    setDueDate(project.dueDate || '');
-    setPriority(project.priority || 'Medium');
-    setTagsInput((project.tags || []).join(', '));
-  }, [project]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -49,56 +34,14 @@ export function ProjectItem({ project, isDark, themeColor, isHighlighted, onTagC
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isMenuOpen]);
 
-  const handleToggleMenu = () => {
+  const handleToggleMenu = (e) => {
+    e.stopPropagation();
     if (!isMenuOpen && menuRef.current) {
       const rect = menuRef.current.getBoundingClientRect();
       const spaceBelow = window.innerHeight - rect.bottom;
       setOpenUpward(spaceBelow < 230);
     }
     setIsMenuOpen((prev) => !prev);
-  };
-
-  const handleStartEdit = () => {
-    setIsMenuOpen(false);
-    setTitle(project.title);
-    setDescription(project.description || '');
-    setDueDate(project.dueDate || '');
-    setPriority(project.priority || 'Medium');
-    setTagsInput((project.tags || []).join(', '));
-    setIsEditing(true);
-  };
-
-  const handleCancelEdit = () => {
-    setTitle(project.title);
-    setDescription(project.description || '');
-    setDueDate(project.dueDate || '');
-    setPriority(project.priority || 'Medium');
-    setTagsInput((project.tags || []).join(', '));
-    setIsEditing(false);
-  };
-
-  const handleUpdate = (e) => {
-    e.preventDefault();
-    if (!title.trim()) return;
-
-    if (dueDate && dueDate < today) {
-      alert('Due date cannot be in the past');
-      return;
-    }
-
-    const parsedTags = tagsInput
-      .split(',')
-      .map((t) => t.trim())
-      .filter((t) => t.length > 0);
-
-    editProject(project.id, {
-      title: title.trim(),
-      description: description.trim(),
-      dueDate,
-      priority,
-      tags: parsedTags,
-    });
-    setIsEditing(false);
   };
 
   const handleAddTask = (e) => {
@@ -115,7 +58,6 @@ export function ProjectItem({ project, isDark, themeColor, isHighlighted, onTagC
 
   const handleToggleTask = (taskId, currentlyCompleted) => {
     toggleTask(project.id, taskId);
-
     if (!currentlyCompleted) {
       const willBeCompletedCount = completedCount + 1;
       if (willBeCompletedCount === totalTasks && totalTasks > 0) {
@@ -127,7 +69,8 @@ export function ProjectItem({ project, isDark, themeColor, isHighlighted, onTagC
     }
   };
 
-  const handleCopyMarkdown = () => {
+  const handleCopyMarkdown = (e) => {
+    e.stopPropagation();
     setIsMenuOpen(false);
     const taskList = (project.tasks || [])
       .map((t) => `- [${t.completed ? 'x' : ' '}] ${t.text}`)
@@ -157,6 +100,13 @@ export function ProjectItem({ project, isDark, themeColor, isHighlighted, onTagC
     Medium: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
     High: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
     Urgent: 'bg-rose-500/10 text-rose-500 border-rose-500/20',
+  };
+
+  const priorityBorderColors = {
+    Low: 'border-l-slate-400',
+    Medium: 'border-l-blue-500',
+    High: 'border-l-amber-500',
+    Urgent: 'border-l-rose-500',
   };
 
   const getDueStatus = (dateStr) => {
@@ -198,9 +148,12 @@ export function ProjectItem({ project, isDark, themeColor, isHighlighted, onTagC
   return (
     <li
       id={`project-${project.id}`}
-      draggable={!isEditing}
+      draggable
       onDragStart={handleDragStart}
-      className={`rounded-2xl border p-4 sm:p-5 shadow-sm transition-all duration-300 list-none flex flex-col justify-between relative group hover:-translate-y-1 hover:shadow-xl cursor-grab active:cursor-grabbing ${
+      onClick={() => onOpenDetail && onOpenDetail(project.id)}
+      className={`rounded-2xl border border-l-4 p-4 sm:p-5 shadow-sm transition-all duration-300 list-none flex flex-col justify-between relative group hover:-translate-y-1 hover:shadow-xl cursor-pointer ${
+        priorityBorderColors[project.priority || 'Medium']
+      } ${
         isFullyCompleted
           ? isDark
             ? 'ring-1 ring-emerald-500/40 bg-slate-800/90 shadow-emerald-500/5'
@@ -220,370 +173,270 @@ export function ProjectItem({ project, isDark, themeColor, isHighlighted, onTagC
           : ''
       }`}
     >
-      {isEditing ? (
-        <form onSubmit={handleUpdate} className="space-y-3">
-          <div>
-            <label className={`block text-xs font-semibold mb-1 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-              Title
-            </label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className={`w-full px-3 py-2 text-sm rounded-lg border focus:outline-none ${
-                isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-slate-200 text-slate-800'
-              }`}
-              autoFocus
-            />
-          </div>
-
-          <div>
-            <label className={`block text-xs font-semibold mb-1 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-              Description
-            </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={2}
-              className={`w-full px-3 py-2 text-sm rounded-lg border focus:outline-none resize-none ${
-                isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-slate-200 text-slate-800'
-              }`}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className={`block text-xs font-semibold mb-1 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-                Priority
-              </label>
-              <select
-                value={priority}
-                onChange={(e) => setPriority(e.target.value)}
-                className={`w-full px-2 py-1.5 text-xs rounded-lg border focus:outline-none ${
-                  isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-slate-200 text-slate-800'
-                }`}
-              >
-                <option value="Low">Low</option>
-                <option value="Medium">Medium</option>
-                <option value="High">High</option>
-                <option value="Urgent">Urgent</option>
-              </select>
-            </div>
-
-            <div>
-              <label className={`block text-xs font-semibold mb-1 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-                Due Date
-              </label>
-              <input
-                type="date"
-                min={today}
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                className={`w-full px-2 py-1.5 text-xs rounded-lg border focus:outline-none ${
-                  isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-slate-200 text-slate-800'
-                }`}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className={`block text-xs font-semibold mb-1 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-              Tags
-            </label>
-            <input
-              type="text"
-              value={tagsInput}
-              onChange={(e) => setTagsInput(e.target.value)}
-              className={`w-full px-3 py-1.5 text-xs rounded-lg border focus:outline-none ${
-                isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-slate-200 text-slate-800'
-              }`}
-            />
-          </div>
-
-          <div className="flex gap-2 pt-2">
-            <button
-              type="submit"
-              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg transition-all cursor-pointer"
-            >
-              Save 💾
-            </button>
-            <button
-              type="button"
-              onClick={handleCancelEdit}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
-                isDark ? 'bg-slate-700 text-slate-300' : 'bg-slate-200 text-slate-700'
-              }`}
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      ) : (
-        <div>
-          <div className="flex items-start justify-between gap-3 mb-2">
-            <div className="flex-1 min-w-0">
-              <div className="flex flex-wrap items-center gap-1.5 mb-2">
-                {project.isPinned && (
-                  <span className="text-xs text-amber-400" title="Pinned Project">
-                    ⭐
-                  </span>
-                )}
-                <span
-                  className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border ${
-                    priorityStyles[project.priority || 'Medium']
-                  }`}
-                >
-                  {project.priority || 'Medium'}
-                </span>
-
-                {dueStatus && (
-                  <span
-                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold border ${dueStatus.badge}`}
-                  >
-                    <span>📅</span>
-                    <span>{dueStatus.label}</span>
-                  </span>
-                )}
-              </div>
-
-              <h3
-                onClick={handleStartEdit}
-                className="text-base sm:text-lg font-bold truncate cursor-pointer hover:opacity-80 transition-opacity"
-              >
-                {project.title}
-              </h3>
-
-              {project.description && (
-                <p className={`text-xs mt-1 leading-relaxed line-clamp-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                  {project.description}
-                </p>
-              )}
-
-              {project.tags && project.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1 mt-2.5">
-                  {project.tags.map((tag, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => onTagClick && onTagClick(tag)}
-                      className={`text-[10px] px-2 py-0.5 rounded-md font-medium transition-all hover:scale-105 cursor-pointer ${
-                        isDark
-                          ? 'bg-slate-700/80 text-slate-300 hover:bg-slate-600'
-                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                      }`}
-                    >
-                      #{tag}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="relative shrink-0" ref={menuRef}>
-              <div className="flex items-center gap-0.5">
-                <button
-                  onClick={() => togglePinProject(project.id)}
-                  className={`p-1.5 rounded-lg transition-all cursor-pointer ${
-                    project.isPinned
-                      ? 'text-amber-400'
-                      : 'text-slate-400 hover:text-amber-400 opacity-0 group-hover:opacity-100'
-                  }`}
-                  title={project.isPinned ? 'Unpin' : 'Pin to top'}
-                >
+      <div>
+        <div className="flex items-start justify-between gap-3 mb-2">
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap items-center gap-1.5 mb-2">
+              {project.isPinned && (
+                <span className="text-xs text-amber-400" title="Pinned Project">
                   ⭐
-                </button>
-
-                <button
-                  onClick={handleToggleMenu}
-                  className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all cursor-pointer ${
-                    isDark
-                      ? 'text-slate-400 hover:text-white hover:bg-slate-700'
-                      : 'text-slate-400 hover:text-slate-800 hover:bg-slate-100'
-                  }`}
-                  title="More actions"
-                >
-                  ⋮
-                </button>
-              </div>
-
-              {isMenuOpen && (
-                <div
-                  className={`absolute right-0 ${
-                    openUpward ? 'bottom-8' : 'top-8'
-                  } w-44 rounded-xl shadow-2xl border p-1 z-30 animate-in fade-in zoom-in-95 duration-150 ${
-                    isDark ? 'bg-slate-800 border-slate-700 text-slate-200 shadow-black/60' : 'bg-white border-slate-200 text-slate-700 shadow-slate-300/60'
-                  }`}
-                >
-                  <button
-                    onClick={() => {
-                      setIsMenuOpen(false);
-                      onStartFocus && onStartFocus(project);
-                    }}
-                    className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg transition-all text-left cursor-pointer ${
-                      isDark ? 'hover:bg-slate-700 hover:text-white' : 'hover:bg-slate-50 hover:text-slate-900'
-                    }`}
-                  >
-                    <span>⏱️️</span>
-                    <span>Focus Timer</span>
-                  </button>
-
-                  <button
-                    onClick={handleStartEdit}
-                    className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg transition-all text-left cursor-pointer ${
-                      isDark ? 'hover:bg-slate-700 hover:text-white' : 'hover:bg-slate-50 hover:text-slate-900'
-                    }`}
-                  >
-                    <span>✏️</span>
-                    <span>Edit Project</span>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setIsMenuOpen(false);
-                      cloneProject(project.id);
-                    }}
-                    className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg transition-all text-left cursor-pointer ${
-                      isDark ? 'hover:bg-slate-700 hover:text-white' : 'hover:bg-slate-50 hover:text-slate-900'
-                    }`}
-                  >
-                    <span>📑</span>
-                    <span>Duplicate</span>
-                  </button>
-
-                  <button
-                    onClick={handleCopyMarkdown}
-                    className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg transition-all text-left cursor-pointer ${
-                      isDark ? 'hover:bg-slate-700 hover:text-white' : 'hover:bg-slate-50 hover:text-slate-900'
-                    }`}
-                  >
-                    <span>{isCopied ? '✓' : '📋'}</span>
-                    <span>{isCopied ? 'Copied!' : 'Copy Markdown'}</span>
-                  </button>
-
-                  <div className={`my-1 border-t ${isDark ? 'border-slate-700' : 'border-slate-100'}`} />
-
-                  <button
-                    onClick={() => {
-                      setIsMenuOpen(false);
-                      deleteProject(project.id);
-                    }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-rose-500 rounded-lg hover:bg-rose-500/10 transition-all text-left cursor-pointer"
-                  >
-                    <span>🗑</span>
-                    <span>Delete Project</span>
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className={`my-3 border-t ${isDark ? 'border-slate-700/80' : 'border-slate-100'}`} />
-
-          <div className="mb-3">
-            <div className={`flex justify-between items-center text-xs mb-1.5 font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-              <span>Progress</span>
-              <span className="font-semibold">{progressPercentage}%</span>
-            </div>
-            <div className={`w-full rounded-full h-1.5 overflow-hidden ${isDark ? 'bg-slate-700' : 'bg-slate-100'}`}>
-              <div
-                className={`${isFullyCompleted ? 'bg-emerald-500' : currentThemeBg} h-1.5 rounded-full transition-all duration-500 ease-out`}
-                style={{ width: `${progressPercentage}%` }}
-              />
-            </div>
-          </div>
-
-          <div className="mt-2">
-            <button
-              onClick={() => setIsTasksExpanded((prev) => !prev)}
-              className={`w-full flex items-center justify-between py-1.5 px-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                isDark ? 'hover:bg-slate-700/60 text-slate-300' : 'hover:bg-slate-100 text-slate-600'
-              }`}
-            >
-              <span className="flex items-center gap-1.5">
-                <span className={`inline-block transition-transform duration-200 ${isTasksExpanded ? 'rotate-90' : ''}`}>
-                  ▶
                 </span>
-                <span>Tasks</span>
-                <span className="opacity-60 text-[11px]">({completedCount}/{totalTasks})</span>
+              )}
+              <span
+                className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border ${
+                  priorityStyles[project.priority || 'Medium']
+                }`}
+              >
+                {project.priority || 'Medium'}
               </span>
 
-              {isFullyCompleted && (
-                <span className="text-[10px] text-emerald-500 font-bold tracking-wide">
-                  Complete 🎉
+              {dueStatus && (
+                <span
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold border ${dueStatus.badge}`}
+                >
+                  <span>📅</span>
+                  <span>{dueStatus.label}</span>
                 </span>
               )}
-            </button>
+            </div>
 
-            {isTasksExpanded && (
-              <div className="pt-3 space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
-                <form onSubmit={handleAddTask} className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="New task..."
-                    value={taskText}
-                    onChange={(e) => setTaskText(e.target.value)}
-                    className={`flex-1 px-3 py-1.5 text-xs rounded-xl border focus:outline-none ${
-                      isDark ? 'bg-slate-700 border-slate-600 text-white placeholder:text-slate-400' : 'bg-white border-slate-200 text-slate-800'
-                    }`}
-                  />
+            <h3 className="text-base sm:text-lg font-bold truncate hover:text-indigo-400 transition-colors">
+              {project.title}
+            </h3>
+
+            {project.description && (
+              <p className={`text-xs mt-1 leading-relaxed line-clamp-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                {project.description}
+              </p>
+            )}
+
+            {project.tags && project.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-2.5" onClick={(e) => e.stopPropagation()}>
+                {project.tags.map((tag, idx) => (
                   <button
-                    type="submit"
-                    className={`px-3 py-1.5 text-white text-xs font-semibold rounded-xl transition-all cursor-pointer ${currentThemeBg}`}
+                    key={idx}
+                    onClick={() => onTagClick && onTagClick(tag)}
+                    className={`text-[10px] px-2 py-0.5 rounded-md font-medium transition-all hover:scale-105 cursor-pointer ${
+                      isDark
+                        ? 'bg-slate-700/80 text-slate-300 hover:bg-slate-600'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
                   >
-                    +
+                    #{tag}
                   </button>
-                </form>
+                ))}
+              </div>
+            )}
+          </div>
 
-                <ul className="space-y-1 p-0 max-h-40 overflow-y-auto">
-                  {project.tasks && project.tasks.length > 0 ? (
-                    project.tasks.map((task) => (
-                      <li
-                        key={task.id}
-                        className={`flex items-center justify-between p-1.5 rounded-lg group transition-all ${
-                          isDark ? 'hover:bg-slate-700/40' : 'hover:bg-slate-50'
-                        }`}
-                      >
-                        <label className={`flex items-center gap-2 cursor-pointer text-xs font-medium select-none truncate ${
-                          isDark ? 'text-slate-200' : 'text-slate-700'
-                        }`}>
-                          <input
-                            type="checkbox"
-                            checked={task.completed}
-                            onChange={() => handleToggleTask(task.id, task.completed)}
-                            className="w-3.5 h-3.5 rounded border-slate-300 cursor-pointer accent-indigo-600"
-                          />
-                          <span className={`truncate ${task.completed ? 'line-through opacity-40' : ''}`}>
-                            {task.text || task.title}
-                          </span>
-                        </label>
+          <div className="relative shrink-0" ref={menuRef} onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-0.5">
+              <button
+                onClick={() => togglePinProject(project.id)}
+                className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                  project.isPinned
+                    ? 'text-amber-400'
+                    : 'text-slate-400 hover:text-amber-400 opacity-0 group-hover:opacity-100'
+                }`}
+                title={project.isPinned ? 'Unpin' : 'Pin to top'}
+              >
+                ⭐
+              </button>
 
-                        <button
-                          onClick={() => deleteTask(project.id, task.id)}
-                          className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-rose-500 text-xs transition-all p-0.5 cursor-pointer"
-                        >
-                          ✕
-                        </button>
-                      </li>
-                    ))
-                  ) : (
-                    <p className="text-[11px] text-slate-400 italic py-1 text-center">No tasks added yet.</p>
-                  )}
-                </ul>
+              <button
+                onClick={handleToggleMenu}
+                className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all cursor-pointer ${
+                  isDark
+                    ? 'text-slate-400 hover:text-white hover:bg-slate-700'
+                    : 'text-slate-400 hover:text-slate-800 hover:bg-slate-100'
+                }`}
+                title="More actions"
+              >
+                ⋮
+              </button>
+            </div>
 
-                {completedCount > 0 && (
-                  <div className="flex justify-end pt-1">
-                    <button
-                      onClick={() => clearCompletedTasks(project.id)}
-                      className="text-[10px] text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"
-                    >
-                      Clear completed tasks
-                    </button>
-                  </div>
-                )}
+            {isMenuOpen && (
+              <div
+                className={`absolute right-0 ${
+                  openUpward ? 'bottom-8' : 'top-8'
+                } w-44 rounded-xl shadow-2xl border p-1 z-30 animate-in fade-in zoom-in-95 duration-150 ${
+                  isDark ? 'bg-slate-800 border-slate-700 text-slate-200 shadow-black/60' : 'bg-white border-slate-200 text-slate-700 shadow-slate-300/60'
+                }`}
+              >
+                <button
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    onOpenDetail && onOpenDetail(project.id);
+                  }}
+                  className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg transition-all text-left cursor-pointer ${
+                    isDark ? 'hover:bg-slate-700 hover:text-white' : 'hover:bg-slate-50 hover:text-slate-900'
+                  }`}
+                >
+                  <span>🔍</span>
+                  <span>View Details</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    onStartFocus && onStartFocus(project);
+                  }}
+                  className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg transition-all text-left cursor-pointer ${
+                    isDark ? 'hover:bg-slate-700 hover:text-white' : 'hover:bg-slate-50 hover:text-slate-900'
+                  }`}
+                >
+                  <span>⏱</span>
+                  <span>Focus Timer</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    cloneProject(project.id);
+                  }}
+                  className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg transition-all text-left cursor-pointer ${
+                    isDark ? 'hover:bg-slate-700 hover:text-white' : 'hover:bg-slate-50 hover:text-slate-900'
+                  }`}
+                >
+                  <span>📑</span>
+                  <span>Duplicate</span>
+                </button>
+
+                <button
+                  onClick={handleCopyMarkdown}
+                  className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg transition-all text-left cursor-pointer ${
+                    isDark ? 'hover:bg-slate-700 hover:text-white' : 'hover:bg-slate-50 hover:text-slate-900'
+                  }`}
+                >
+                  <span>{isCopied ? '✓' : '📋'}</span>
+                  <span>{isCopied ? 'Copied!' : 'Copy Markdown'}</span>
+                </button>
+
+                <div className={`my-1 border-t ${isDark ? 'border-slate-700' : 'border-slate-100'}`} />
+
+                <button
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    deleteProject(project.id);
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-rose-500 rounded-lg hover:bg-rose-500/10 transition-all text-left cursor-pointer"
+                >
+                  <span>🗑</span>
+                  <span>Delete Project</span>
+                </button>
               </div>
             )}
           </div>
         </div>
-      )}
+
+        <div className={`my-3 border-t ${isDark ? 'border-slate-700/80' : 'border-slate-100'}`} />
+
+        <div className="mb-3">
+          <div className={`flex justify-between items-center text-xs mb-1.5 font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+            <span>Progress</span>
+            <span className="font-semibold">{progressPercentage}%</span>
+          </div>
+          <div className={`w-full rounded-full h-1.5 overflow-hidden ${isDark ? 'bg-slate-700' : 'bg-slate-100'}`}>
+            <div
+              className={`${isFullyCompleted ? 'bg-emerald-500' : currentThemeBg} h-1.5 rounded-full transition-all duration-500 ease-out`}
+              style={{ width: `${progressPercentage}%` }}
+            />
+          </div>
+        </div>
+
+        <div className="mt-2" onClick={(e) => e.stopPropagation()}>
+          <button
+            onClick={() => setIsTasksExpanded((prev) => !prev)}
+            className={`w-full flex items-center justify-between py-1.5 px-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              isDark ? 'hover:bg-slate-700/60 text-slate-300' : 'hover:bg-slate-100 text-slate-600'
+            }`}
+          >
+            <span className="flex items-center gap-1.5">
+              <span className={`inline-block transition-transform duration-200 ${isTasksExpanded ? 'rotate-90' : ''}`}>
+                ▶
+              </span>
+              <span>Quick Tasks</span>
+              <span className="opacity-60 text-[11px]">({completedCount}/{totalTasks})</span>
+            </span>
+
+            {isFullyCompleted && (
+              <span className="text-[10px] text-emerald-500 font-bold tracking-wide">
+                Done 🎉
+              </span>
+            )}
+          </button>
+
+          {isTasksExpanded && (
+            <div className="pt-3 space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
+              <form onSubmit={handleAddTask} className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="New task..."
+                  value={taskText}
+                  onChange={(e) => setTaskText(e.target.value)}
+                  className={`flex-1 px-3 py-1.5 text-xs rounded-xl border focus:outline-none ${
+                    isDark ? 'bg-slate-700 border-slate-600 text-white placeholder:text-slate-400' : 'bg-white border-slate-200 text-slate-800'
+                  }`}
+                />
+                <button
+                  type="submit"
+                  className={`px-3 py-1.5 text-white text-xs font-semibold rounded-xl transition-all cursor-pointer ${currentThemeBg}`}
+                >
+                  +
+                </button>
+              </form>
+
+              <ul className="space-y-1 p-0 max-h-36 overflow-y-auto">
+                {project.tasks && project.tasks.length > 0 ? (
+                  project.tasks.map((task) => (
+                    <li
+                      key={task.id}
+                      className={`flex items-center justify-between p-1.5 rounded-lg group transition-all ${
+                        isDark ? 'hover:bg-slate-700/40' : 'hover:bg-slate-50'
+                      }`}
+                    >
+                      <label className={`flex items-center gap-2 cursor-pointer text-xs font-medium select-none truncate ${
+                        isDark ? 'text-slate-200' : 'text-slate-700'
+                      }`}>
+                        <input
+                          type="checkbox"
+                          checked={task.completed}
+                          onChange={() => handleToggleTask(task.id, task.completed)}
+                          className="w-3.5 h-3.5 rounded border-slate-300 cursor-pointer accent-indigo-600"
+                        />
+                        <span className={`truncate ${task.completed ? 'line-through opacity-40' : ''}`}>
+                          {task.text || task.title}
+                        </span>
+                      </label>
+
+                      <button
+                        onClick={() => deleteTask(project.id, task.id)}
+                        className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-rose-500 text-xs transition-all p-0.5 cursor-pointer"
+                      >
+                        ✕
+                      </button>
+                    </li>
+                  ))
+                ) : (
+                  <p className="text-[11px] text-slate-400 italic py-1 text-center">No tasks added yet.</p>
+                )}
+              </ul>
+
+              {completedCount > 0 && (
+                <div className="flex justify-end pt-1">
+                  <button
+                    onClick={() => clearCompletedTasks(project.id)}
+                    className="text-[10px] text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"
+                  >
+                    Clear completed tasks
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
     </li>
   );
 }
