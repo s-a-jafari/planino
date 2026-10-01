@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useProjects } from './context/ProjectContext';
 
-export function ProjectItem({ project, isDark, themeColor, isHighlighted }) {
+export function ProjectItem({ project, isDark, themeColor, isHighlighted, onTagClick }) {
   const [isEditing, setIsEditing] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isTasksExpanded, setIsTasksExpanded] = useState(false);
   const [title, setTitle] = useState(project.title);
   const [description, setDescription] = useState(project.description || '');
   const [dueDate, setDueDate] = useState(project.dueDate || '');
@@ -11,6 +13,7 @@ export function ProjectItem({ project, isDark, themeColor, isHighlighted }) {
   const [taskText, setTaskText] = useState('');
   const [isCopied, setIsCopied] = useState(false);
 
+  const menuRef = useRef(null);
   const {
     deleteProject,
     cloneProject,
@@ -32,7 +35,20 @@ export function ProjectItem({ project, isDark, themeColor, isHighlighted }) {
     setTagsInput((project.tags || []).join(', '));
   }, [project]);
 
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setIsMenuOpen(false);
+      }
+    };
+    if (isMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isMenuOpen]);
+
   const handleStartEdit = () => {
+    setIsMenuOpen(false);
     setTitle(project.title);
     setDescription(project.description || '');
     setDueDate(project.dueDate || '');
@@ -82,6 +98,7 @@ export function ProjectItem({ project, isDark, themeColor, isHighlighted }) {
   };
 
   const handleCopyMarkdown = () => {
+    setIsMenuOpen(false);
     const taskList = (project.tasks || [])
       .map((t) => `- [${t.completed ? 'x' : ' '}] ${t.text}`)
       .join('\n');
@@ -151,18 +168,24 @@ export function ProjectItem({ project, isDark, themeColor, isHighlighted }) {
   return (
     <li
       id={`project-${project.id}`}
-      className={`rounded-2xl border p-5 shadow-sm transition-all duration-300 list-none flex flex-col justify-between relative ${
+      className={`rounded-2xl border p-5 shadow-sm transition-all duration-300 list-none flex flex-col justify-between relative group hover:-translate-y-1 hover:shadow-xl ${
+        isFullyCompleted
+          ? isDark
+            ? 'ring-1 ring-emerald-500/40 bg-slate-800/90 shadow-emerald-500/5'
+            : 'ring-1 ring-emerald-500/40 bg-emerald-50/10 shadow-emerald-500/10'
+          : ''
+      } ${
         project.isPinned
           ? isDark
-            ? 'ring-1 ring-amber-400/50 bg-slate-800/90'
-            : 'ring-1 ring-amber-400/60 bg-amber-50/20'
-          : ''
+            ? 'border-amber-400/50 bg-slate-800/95'
+            : 'border-amber-400/60 bg-amber-50/15'
+          : isDark
+          ? 'bg-slate-800 border-slate-700/80 text-white'
+          : 'bg-white border-slate-200/80 text-slate-800'
       } ${
         isHighlighted
-          ? 'ring-2 ring-indigo-500 scale-[1.02] shadow-lg shadow-indigo-500/20'
+          ? 'ring-2 ring-indigo-500 scale-[1.02] shadow-indigo-500/20'
           : ''
-      } ${
-        isDark ? 'bg-slate-800 border-slate-700/80 text-white' : 'bg-white border-slate-200/80 text-slate-800'
       }`}
     >
       {isEditing ? (
@@ -266,8 +289,13 @@ export function ProjectItem({ project, isDark, themeColor, isHighlighted }) {
       ) : (
         <div>
           <div className="flex items-start justify-between gap-3 mb-2">
-            <div>
+            <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-1.5 mb-2">
+                {project.isPinned && (
+                  <span className="text-xs text-amber-400" title="Pinned Project">
+                    ⭐
+                  </span>
+                )}
                 <span
                   className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border ${
                     priorityStyles[project.priority || 'Medium']
@@ -288,13 +316,13 @@ export function ProjectItem({ project, isDark, themeColor, isHighlighted }) {
 
               <h3
                 onClick={handleStartEdit}
-                className="text-lg font-bold cursor-pointer hover:opacity-85 transition-opacity"
+                className="text-base sm:text-lg font-bold truncate cursor-pointer hover:opacity-80 transition-opacity"
               >
                 {project.title}
               </h3>
 
               {project.description && (
-                <p className={`text-xs mt-1 leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                <p className={`text-xs mt-1 leading-relaxed line-clamp-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                   {project.description}
                 </p>
               )}
@@ -302,169 +330,210 @@ export function ProjectItem({ project, isDark, themeColor, isHighlighted }) {
               {project.tags && project.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-2.5">
                   {project.tags.map((tag, idx) => (
-                    <span
+                    <button
                       key={idx}
-                      className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
-                        isDark ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-600'
+                      onClick={() => onTagClick && onTagClick(tag)}
+                      className={`text-[10px] px-2 py-0.5 rounded-md font-medium transition-all hover:scale-105 cursor-pointer ${
+                        isDark
+                          ? 'bg-slate-700/80 text-slate-300 hover:bg-slate-600'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                       }`}
                     >
                       #{tag}
-                    </span>
+                    </button>
                   ))}
                 </div>
               )}
             </div>
 
-            <div className="flex items-center gap-1 shrink-0">
-              <button
-                onClick={() => togglePinProject(project.id)}
-                className={`p-1.5 rounded-lg transition-all cursor-pointer ${
-                  project.isPinned
-                    ? 'text-amber-400 bg-amber-400/10'
-                    : isDark
-                    ? 'text-slate-500 hover:text-amber-400 hover:bg-slate-700'
-                    : 'text-slate-400 hover:text-amber-500 hover:bg-slate-100'
-                }`}
-                title={project.isPinned ? 'Unpin Project' : 'Pin to Top'}
-              >
-                ⭐
-              </button>
+            <div className="relative shrink-0" ref={menuRef}>
+              <div className="flex items-center gap-0.5">
+                <button
+                  onClick={() => togglePinProject(project.id)}
+                  className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                    project.isPinned
+                      ? 'text-amber-400'
+                      : 'text-slate-400 hover:text-amber-400 opacity-0 group-hover:opacity-100'
+                  }`}
+                  title={project.isPinned ? 'Unpin' : 'Pin to top'}
+                >
+                  ⭐
+                </button>
 
-              <button
-                onClick={handleCopyMarkdown}
-                className={`p-1.5 rounded-lg transition-all cursor-pointer ${
-                  isCopied
-                    ? 'text-emerald-500 bg-emerald-500/10 font-bold'
-                    : isDark
-                    ? 'text-slate-400 hover:text-white hover:bg-slate-700'
-                    : 'text-slate-400 hover:text-indigo-600 hover:bg-indigo-50'
-                }`}
-                title="Copy Markdown Summary"
-              >
-                {isCopied ? '✓' : '📋'}
-              </button>
+                <button
+                  onClick={() => setIsMenuOpen((prev) => !prev)}
+                  className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all cursor-pointer ${
+                    isDark
+                      ? 'text-slate-400 hover:text-white hover:bg-slate-700'
+                      : 'text-slate-400 hover:text-slate-800 hover:bg-slate-100'
+                  }`}
+                  title="More actions"
+                >
+                  ⋮
+                </button>
+              </div>
 
-              <button
-                onClick={() => cloneProject(project.id)}
-                className={`p-1.5 rounded-lg transition-all cursor-pointer ${
-                  isDark ? 'text-slate-400 hover:text-white hover:bg-slate-700' : 'text-slate-400 hover:text-indigo-600 hover:bg-indigo-50'
-                }`}
-                title="Clone Project"
-              >
-                📑
-              </button>
+              {isMenuOpen && (
+                <div
+                  className={`absolute right-0 top-8 w-44 rounded-xl shadow-xl border p-1 z-30 animate-in fade-in zoom-in-95 duration-150 ${
+                    isDark ? 'bg-slate-800 border-slate-700 text-slate-200' : 'bg-white border-slate-200 text-slate-700'
+                  }`}
+                >
+                  <button
+                    onClick={handleStartEdit}
+                    className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg transition-all text-left cursor-pointer ${
+                      isDark ? 'hover:bg-slate-700 hover:text-white' : 'hover:bg-slate-50 hover:text-slate-900'
+                    }`}
+                  >
+                    <span>✏️</span>
+                    <span>Edit Project</span>
+                  </button>
 
-              <button
-                onClick={handleStartEdit}
-                className={`p-1.5 rounded-lg transition-all cursor-pointer ${
-                  isDark ? 'text-slate-400 hover:text-white hover:bg-slate-700' : 'text-slate-400 hover:text-indigo-600 hover:bg-indigo-50'
-                }`}
-                title="Edit"
-              >
-                ✏️
-              </button>
+                  <button
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      cloneProject(project.id);
+                    }}
+                    className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg transition-all text-left cursor-pointer ${
+                      isDark ? 'hover:bg-slate-700 hover:text-white' : 'hover:bg-slate-50 hover:text-slate-900'
+                    }`}
+                  >
+                    <span>📑</span>
+                    <span>Duplicate</span>
+                  </button>
 
-              <button
-                onClick={() => deleteProject(project.id)}
-                className={`p-1.5 rounded-lg transition-all cursor-pointer ${
-                  isDark ? 'text-slate-400 hover:text-rose-400 hover:bg-slate-700' : 'text-slate-400 hover:text-rose-600 hover:bg-rose-50'
-                }`}
-                title="Delete"
-              >
-                🗑
-              </button>
+                  <button
+                    onClick={handleCopyMarkdown}
+                    className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg transition-all text-left cursor-pointer ${
+                      isDark ? 'hover:bg-slate-700 hover:text-white' : 'hover:bg-slate-50 hover:text-slate-900'
+                    }`}
+                  >
+                    <span>{isCopied ? '✓' : '📋'}</span>
+                    <span>{isCopied ? 'Copied!' : 'Copy Markdown'}</span>
+                  </button>
+
+                  <div className={`my-1 border-t ${isDark ? 'border-slate-700' : 'border-slate-100'}`} />
+
+                  <button
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      deleteProject(project.id);
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-rose-500 rounded-lg hover:bg-rose-500/10 transition-all text-left cursor-pointer"
+                  >
+                    <span>🗑</span>
+                    <span>Delete Project</span>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
-          <div className={`my-4 border-t ${isDark ? 'border-slate-700' : 'border-slate-100'}`} />
+          <div className={`my-3 border-t ${isDark ? 'border-slate-700/80' : 'border-slate-100'}`} />
 
-          <div className="mb-4">
-            <div className={`flex justify-between items-center text-xs mb-1 font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+          <div className="mb-3">
+            <div className={`flex justify-between items-center text-xs mb-1.5 font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
               <span>Progress</span>
-              <span>{progressPercentage}%</span>
+              <span className="font-semibold">{progressPercentage}%</span>
             </div>
-            <div className={`w-full rounded-full h-2 overflow-hidden ${isDark ? 'bg-slate-700' : 'bg-slate-100'}`}>
+            <div className={`w-full rounded-full h-1.5 overflow-hidden ${isDark ? 'bg-slate-700' : 'bg-slate-100'}`}>
               <div
-                className={`${isFullyCompleted ? 'bg-emerald-500' : currentThemeBg} h-2 rounded-full transition-all duration-300`}
+                className={`${isFullyCompleted ? 'bg-emerald-500' : currentThemeBg} h-1.5 rounded-full transition-all duration-500 ease-out`}
                 style={{ width: `${progressPercentage}%` }}
               />
             </div>
-
-            {isFullyCompleted && (
-              <div className="mt-2 text-center py-1 rounded-lg bg-emerald-500/10 text-emerald-500 text-[11px] font-semibold border border-emerald-500/20">
-                All tasks finished! 🎉
-              </div>
-            )}
           </div>
 
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h4 className={`text-xs font-bold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                Tasks ({completedCount}/{totalTasks})
-              </h4>
-              {completedCount > 0 && (
-                <button
-                  onClick={() => clearCompletedTasks(project.id)}
-                  className="text-[10px] text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"
-                >
-                  Clear Done
-                </button>
+          <div className="mt-2">
+            <button
+              onClick={() => setIsTasksExpanded((prev) => !prev)}
+              className={`w-full flex items-center justify-between py-1.5 px-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                isDark ? 'hover:bg-slate-700/60 text-slate-300' : 'hover:bg-slate-100 text-slate-600'
+              }`}
+            >
+              <span className="flex items-center gap-1.5">
+                <span className={`inline-block transition-transform duration-200 ${isTasksExpanded ? 'rotate-90' : ''}`}>
+                  ▶
+                </span>
+                <span>Tasks</span>
+                <span className="opacity-60 text-[11px]">({completedCount}/{totalTasks})</span>
+              </span>
+
+              {isFullyCompleted && (
+                <span className="text-[10px] text-emerald-500 font-bold tracking-wide">
+                  Complete 🎉
+                </span>
               )}
-            </div>
+            </button>
 
-            <form onSubmit={handleAddTask} className="flex gap-2 mb-3">
-              <input
-                type="text"
-                placeholder="Add a new task..."
-                value={taskText}
-                onChange={(e) => setTaskText(e.target.value)}
-                className={`flex-1 px-3 py-1.5 text-xs rounded-xl border focus:outline-none ${
-                  isDark ? 'bg-slate-700 border-slate-600 text-white placeholder:text-slate-400' : 'bg-white border-slate-200 text-slate-800'
-                }`}
-              />
-              <button
-                type="submit"
-                className={`px-3 py-1.5 text-white text-xs font-semibold rounded-xl transition-all cursor-pointer ${currentThemeBg}`}
-              >
-                + Add
-              </button>
-            </form>
-
-            <ul className="space-y-1.5 p-0">
-              {project.tasks && project.tasks.length > 0 ? (
-                project.tasks.map((task) => (
-                  <li
-                    key={task.id}
-                    className={`flex items-center justify-between p-2 rounded-xl group transition-all ${
-                      isDark ? 'hover:bg-slate-700/50' : 'hover:bg-slate-50'
+            {isTasksExpanded && (
+              <div className="pt-3 space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                <form onSubmit={handleAddTask} className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="New task..."
+                    value={taskText}
+                    onChange={(e) => setTaskText(e.target.value)}
+                    className={`flex-1 px-3 py-1.5 text-xs rounded-xl border focus:outline-none ${
+                      isDark ? 'bg-slate-700 border-slate-600 text-white placeholder:text-slate-400' : 'bg-white border-slate-200 text-slate-800'
                     }`}
+                  />
+                  <button
+                    type="submit"
+                    className={`px-3 py-1.5 text-white text-xs font-semibold rounded-xl transition-all cursor-pointer ${currentThemeBg}`}
                   >
-                    <label className={`flex items-center gap-2.5 cursor-pointer text-xs font-medium select-none ${
-                      isDark ? 'text-slate-200' : 'text-slate-700'
-                    }`}>
-                      <input
-                        type="checkbox"
-                        checked={task.completed}
-                        onChange={() => toggleTask(project.id, task.id)}
-                        className="w-4 h-4 rounded border-slate-300 cursor-pointer"
-                      />
-                      <span className={task.completed ? 'line-through opacity-40' : ''}>
-                        {task.text || task.title}
-                      </span>
-                    </label>
+                    +
+                  </button>
+                </form>
 
+                <ul className="space-y-1 p-0 max-h-40 overflow-y-auto">
+                  {project.tasks && project.tasks.length > 0 ? (
+                    project.tasks.map((task) => (
+                      <li
+                        key={task.id}
+                        className={`flex items-center justify-between p-1.5 rounded-lg group transition-all ${
+                          isDark ? 'hover:bg-slate-700/40' : 'hover:bg-slate-50'
+                        }`}
+                      >
+                        <label className={`flex items-center gap-2 cursor-pointer text-xs font-medium select-none truncate ${
+                          isDark ? 'text-slate-200' : 'text-slate-700'
+                        }`}>
+                          <input
+                            type="checkbox"
+                            checked={task.completed}
+                            onChange={() => toggleTask(project.id, task.id)}
+                            className="w-3.5 h-3.5 rounded border-slate-300 cursor-pointer accent-indigo-600"
+                          />
+                          <span className={`truncate ${task.completed ? 'line-through opacity-40' : ''}`}>
+                            {task.text || task.title}
+                          </span>
+                        </label>
+
+                        <button
+                          onClick={() => deleteTask(project.id, task.id)}
+                          className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-rose-500 text-xs transition-all p-0.5 cursor-pointer"
+                        >
+                          ✕
+                        </button>
+                      </li>
+                    ))
+                  ) : (
+                    <p className="text-[11px] text-slate-400 italic py-1 text-center">No tasks added yet.</p>
+                  )}
+                </ul>
+
+                {completedCount > 0 && (
+                  <div className="flex justify-end pt-1">
                     <button
-                      onClick={() => deleteTask(project.id, task.id)}
-                      className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-rose-500 text-xs transition-all p-1 cursor-pointer"
+                      onClick={() => clearCompletedTasks(project.id)}
+                      className="text-[10px] text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"
                     >
-                      ✕
+                      Clear completed tasks
                     </button>
-                  </li>
-                ))
-              ) : (
-                <p className="text-xs text-slate-400 italic py-1">No tasks yet.</p>
-              )}
-            </ul>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}

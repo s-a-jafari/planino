@@ -13,6 +13,7 @@ function App() {
   const [isShortcutsModalOpen, setIsShortcutsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [selectedTag, setSelectedTag] = useState(null);
   const [sortBy, setSortBy] = useState('newest');
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [highlightedProjectId, setHighlightedProjectId] = useState(null);
@@ -106,10 +107,13 @@ function App() {
         (project.description?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
         (project.tags || []).some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()));
 
+      const matchesTag = selectedTag ? (project.tags || []).includes(selectedTag) : true;
+
       const pTotal = project.tasks?.length || 0;
       const pCompleted = project.tasks?.filter((t) => t.completed).length || 0;
       const isCompleted = pTotal > 0 && pCompleted === pTotal;
 
+      if (!matchesTag) return false;
       if (filterStatus === 'completed') return matchesSearch && isCompleted;
       if (filterStatus === 'in-progress') return matchesSearch && !isCompleted;
 
@@ -216,30 +220,44 @@ function App() {
         </section>
 
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-6">
-          <div
-            className={`p-1 rounded-xl flex gap-1 ${
-              settings.isDark ? 'bg-slate-800 border border-slate-700' : 'bg-slate-200/60'
-            }`}
-          >
-            {['all', 'in-progress', 'completed'].map((status) => (
-              <button
-                key={status}
-                onClick={() => setFilterStatus(status)}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-lg capitalize transition-all cursor-pointer ${
-                  filterStatus === status
-                    ? settings.isDark
-                      ? 'bg-slate-700 text-white shadow-sm'
-                      : 'bg-white text-slate-800 shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                {status === 'all' ? 'All' : status === 'in-progress' ? 'In Progress' : 'Completed'}
-              </button>
-            ))}
+          <div className="flex flex-wrap items-center gap-2">
+            <div
+              className={`p-1 rounded-xl flex gap-1 ${
+                settings.isDark ? 'bg-slate-800 border border-slate-700' : 'bg-slate-200/60'
+              }`}
+            >
+              {['all', 'in-progress', 'completed'].map((status) => (
+                <button
+                  key={status}
+                  onClick={() => setFilterStatus(status)}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg capitalize transition-all cursor-pointer ${
+                    filterStatus === status
+                      ? settings.isDark
+                        ? 'bg-slate-700 text-white shadow-sm'
+                        : 'bg-white text-slate-800 shadow-sm'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  {status === 'all' ? 'All' : status === 'in-progress' ? 'In Progress' : 'Completed'}
+                </button>
+              ))}
+            </div>
+
+            {selectedTag && (
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 text-xs font-semibold">
+                <span>#{selectedTag}</span>
+                <button
+                  onClick={() => setSelectedTag(null)}
+                  className="hover:opacity-70 cursor-pointer ml-1"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-slate-400">Sort by:</span>
+            <span className="text-xs font-semibold text-slate-400">Sort:</span>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
@@ -277,6 +295,7 @@ function App() {
                   isDark={settings.isDark}
                   themeColor={settings.themeColor}
                   isHighlighted={project.id === highlightedProjectId}
+                  onTagClick={(tag) => setSelectedTag(tag)}
                 />
               ))}
             </ul>
@@ -284,25 +303,23 @@ function App() {
         </div>
       </div>
 
-      <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-40">
+      <div className={`fixed bottom-6 right-6 flex items-center gap-2 p-1.5 rounded-full border shadow-xl backdrop-blur-md z-40 transition-all ${
+        settings.isDark ? 'bg-slate-800/90 border-slate-700' : 'bg-white/90 border-slate-200'
+      }`}>
         <button
           onClick={() => setIsShortcutsModalOpen(true)}
-          className={`w-12 h-12 border rounded-full shadow-lg flex items-center justify-center text-sm font-black transition-all active:scale-95 cursor-pointer ${
-            settings.isDark
-              ? 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
-              : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+          className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold transition-all cursor-pointer ${
+            settings.isDark ? 'text-slate-400 hover:text-white hover:bg-slate-700' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
           }`}
           title="Shortcuts (?)"
         >
-          ?
+          ⌨️
         </button>
 
         <button
           onClick={() => setIsSearchModalOpen(true)}
-          className={`w-12 h-12 border rounded-full shadow-lg flex items-center justify-center text-xl transition-all active:scale-95 cursor-pointer ${
-            settings.isDark
-              ? 'bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700'
-              : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+          className={`w-10 h-10 rounded-full flex items-center justify-center text-sm transition-all cursor-pointer ${
+            settings.isDark ? 'text-slate-400 hover:text-white hover:bg-slate-700' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
           }`}
           title="Search (/ or Alt+K)"
         >
@@ -311,10 +328,8 @@ function App() {
 
         <button
           onClick={() => setIsSettingsModalOpen(true)}
-          className={`w-12 h-12 border rounded-full shadow-lg flex items-center justify-center text-xl transition-all hover:rotate-45 active:scale-95 cursor-pointer ${
-            settings.isDark
-              ? 'bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700'
-              : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+          className={`w-10 h-10 rounded-full flex items-center justify-center text-sm transition-all hover:rotate-45 cursor-pointer ${
+            settings.isDark ? 'text-slate-400 hover:text-white hover:bg-slate-700' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
           }`}
           title="Settings"
         >
