@@ -6,6 +6,8 @@ export function ProjectItem({ project, isDark, themeColor, isHighlighted }) {
   const [title, setTitle] = useState(project.title);
   const [description, setDescription] = useState(project.description || '');
   const [dueDate, setDueDate] = useState(project.dueDate || '');
+  const [priority, setPriority] = useState(project.priority || 'Medium');
+  const [tagsInput, setTagsInput] = useState((project.tags || []).join(', '));
   const [taskText, setTaskText] = useState('');
 
   const { deleteProject, editProject, addTask, toggleTask, deleteTask } = useProjects();
@@ -15,12 +17,16 @@ export function ProjectItem({ project, isDark, themeColor, isHighlighted }) {
     setTitle(project.title);
     setDescription(project.description || '');
     setDueDate(project.dueDate || '');
+    setPriority(project.priority || 'Medium');
+    setTagsInput((project.tags || []).join(', '));
   }, [project]);
 
   const handleStartEdit = () => {
     setTitle(project.title);
     setDescription(project.description || '');
     setDueDate(project.dueDate || '');
+    setPriority(project.priority || 'Medium');
+    setTagsInput((project.tags || []).join(', '));
     setIsEditing(true);
   };
 
@@ -28,6 +34,8 @@ export function ProjectItem({ project, isDark, themeColor, isHighlighted }) {
     setTitle(project.title);
     setDescription(project.description || '');
     setDueDate(project.dueDate || '');
+    setPriority(project.priority || 'Medium');
+    setTagsInput((project.tags || []).join(', '));
     setIsEditing(false);
   };
 
@@ -40,10 +48,17 @@ export function ProjectItem({ project, isDark, themeColor, isHighlighted }) {
       return;
     }
 
+    const parsedTags = tagsInput
+      .split(',')
+      .map((tag) => tag.trim())
+      .filter((tag) => tag.length > 0);
+
     editProject(project.id, {
       title: title.trim(),
       description: description.trim(),
       dueDate,
+      priority,
+      tags: parsedTags,
     });
     setIsEditing(false);
   };
@@ -69,10 +84,48 @@ export function ProjectItem({ project, isDark, themeColor, isHighlighted }) {
 
   const currentThemeBg = colorClasses[themeColor] || 'bg-indigo-600';
 
+  const priorityStyles = {
+    Low: 'bg-slate-500/10 text-slate-500 border-slate-500/20',
+    Medium: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
+    High: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
+    Urgent: 'bg-rose-500/10 text-rose-500 border-rose-500/20',
+  };
+
+  const getDueStatus = (dateStr) => {
+    if (!dateStr) return null;
+    const diffTime = new Date(dateStr) - new Date(today);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0) {
+      return {
+        label: 'Overdue',
+        badge: 'bg-rose-500/10 text-rose-500 border-rose-500/20 animate-pulse',
+      };
+    }
+    if (diffDays === 0) {
+      return {
+        label: 'Due Today',
+        badge: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
+      };
+    }
+    if (diffDays === 1) {
+      return {
+        label: 'Tomorrow',
+        badge: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
+      };
+    }
+    return {
+      label: `${diffDays}d left`,
+      badge: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
+    };
+  };
+
+  const dueStatus = getDueStatus(project.dueDate);
+
   return (
     <li
       id={`project-${project.id}`}
-      className={`rounded-2xl border p-5 shadow-sm transition-all duration-300 list-none ${
+      className={`rounded-2xl border p-5 shadow-sm transition-all duration-300 list-none flex flex-col justify-between ${
         isHighlighted
           ? 'ring-2 ring-indigo-500 scale-[1.02] shadow-lg shadow-indigo-500/20'
           : ''
@@ -111,22 +164,56 @@ export function ProjectItem({ project, isDark, themeColor, isHighlighted }) {
             />
           </div>
 
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className={`block text-xs font-semibold mb-1 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                Priority
+              </label>
+              <select
+                value={priority}
+                onChange={(e) => setPriority(e.target.value)}
+                className={`w-full px-2 py-1.5 text-xs rounded-lg border focus:outline-none ${
+                  isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-slate-200 text-slate-800'
+                }`}
+              >
+                <option value="Low">Low</option>
+                <option value="Medium">Medium</option>
+                <option value="High">High</option>
+                <option value="Urgent">Urgent</option>
+              </select>
+            </div>
+
+            <div>
+              <label className={`block text-xs font-semibold mb-1 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                Due Date
+              </label>
+              <input
+                type="date"
+                min={today}
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className={`w-full px-2 py-1.5 text-xs rounded-lg border focus:outline-none ${
+                  isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-slate-200 text-slate-800'
+                }`}
+              />
+            </div>
+          </div>
+
           <div>
             <label className={`block text-xs font-semibold mb-1 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-              Due Date
+              Tags
             </label>
             <input
-              type="date"
-              min={today}
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-              className={`w-full px-3 py-2 text-sm rounded-lg border focus:outline-none ${
+              type="text"
+              value={tagsInput}
+              onChange={(e) => setTagsInput(e.target.value)}
+              className={`w-full px-3 py-1.5 text-xs rounded-lg border focus:outline-none ${
                 isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-slate-200 text-slate-800'
               }`}
             />
           </div>
 
-          <div className="flex gap-2 pt-1">
+          <div className="flex gap-2 pt-2">
             <button
               type="submit"
               className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg transition-all cursor-pointer"
@@ -146,23 +233,52 @@ export function ProjectItem({ project, isDark, themeColor, isHighlighted }) {
         </form>
       ) : (
         <div>
-          <div className="flex items-start justify-between gap-4 mb-2">
+          <div className="flex items-start justify-between gap-3 mb-2">
             <div>
+              <div className="flex flex-wrap items-center gap-1.5 mb-2">
+                <span
+                  className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border ${
+                    priorityStyles[project.priority || 'Medium']
+                  }`}
+                >
+                  {project.priority || 'Medium'}
+                </span>
+
+                {dueStatus && (
+                  <span
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold border ${dueStatus.badge}`}
+                  >
+                    <span>📅</span>
+                    <span>{dueStatus.label}</span>
+                  </span>
+                )}
+              </div>
+
               <h3
                 onClick={handleStartEdit}
-                className="text-lg font-bold cursor-pointer hover:opacity-80 transition-opacity"
+                className="text-lg font-bold cursor-pointer hover:opacity-85 transition-opacity"
               >
                 {project.title}
               </h3>
+
               {project.description && (
-                <p className={`text-sm mt-0.5 leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                <p className={`text-xs mt-1 leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                   {project.description}
                 </p>
               )}
-              {project.dueDate && (
-                <div className="mt-3 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-                  <span>📅</span>
-                  <span>Due Date: {project.dueDate}</span>
+
+              {project.tags && project.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-2.5">
+                  {project.tags.map((tag, idx) => (
+                    <span
+                      key={idx}
+                      className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                        isDark ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-600'
+                      }`}
+                    >
+                      #{tag}
+                    </span>
+                  ))}
                 </div>
               )}
             </div>
