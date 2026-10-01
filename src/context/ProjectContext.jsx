@@ -12,6 +12,7 @@ export function ProjectProvider({ children }) {
       dueDate: '2026-10-25',
       priority: 'High',
       tags: ['Core', 'Architecture'],
+      isPinned: true,
       createdAt: new Date().toISOString(),
       tasks: [
         { id: '101', text: 'Setup Git Repository', completed: true },
@@ -26,6 +27,7 @@ export function ProjectProvider({ children }) {
       dueDate: '2026-10-10',
       priority: 'Medium',
       tags: ['Design', 'Tailwind'],
+      isPinned: false,
       createdAt: new Date().toISOString(),
       tasks: [
         { id: '201', text: 'Refactor modals', completed: true },
@@ -42,6 +44,7 @@ export function ProjectProvider({ children }) {
       dueDate: dueDate || '',
       priority,
       tags: Array.isArray(tags) ? tags : [],
+      isPinned: false,
       createdAt: new Date().toISOString(),
       tasks: [],
     };
@@ -49,6 +52,15 @@ export function ProjectProvider({ children }) {
     setProjects((prev) => {
       const safe = Array.isArray(prev) ? prev : [];
       return [newProject, ...safe];
+    });
+  };
+
+  const togglePinProject = (projectId) => {
+    setProjects((prev) => {
+      const safe = Array.isArray(prev) ? prev : [];
+      return safe.map((p) =>
+        String(p.id) === String(projectId) ? { ...p, isPinned: !p.isPinned } : p
+      );
     });
   };
 
@@ -67,6 +79,7 @@ export function ProjectProvider({ children }) {
       ...target,
       id: Date.now().toString(),
       title: `${target.title} (Copy)`,
+      isPinned: false,
       createdAt: new Date().toISOString(),
       tasks: (target.tasks || []).map((t, idx) => ({
         ...t,
@@ -167,6 +180,7 @@ export function ProjectProvider({ children }) {
       value={{
         projects: Array.isArray(projects) ? projects : [],
         addProject,
+        togglePinProject,
         deleteProject,
         cloneProject,
         editProject,

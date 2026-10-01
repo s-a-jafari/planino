@@ -9,10 +9,12 @@ export function ProjectItem({ project, isDark, themeColor, isHighlighted }) {
   const [priority, setPriority] = useState(project.priority || 'Medium');
   const [tagsInput, setTagsInput] = useState((project.tags || []).join(', '));
   const [taskText, setTaskText] = useState('');
+  const [isCopied, setIsCopied] = useState(false);
 
   const {
     deleteProject,
     cloneProject,
+    togglePinProject,
     editProject,
     addTask,
     toggleTask,
@@ -79,6 +81,20 @@ export function ProjectItem({ project, isDark, themeColor, isHighlighted }) {
     setTaskText('');
   };
 
+  const handleCopyMarkdown = () => {
+    const taskList = (project.tasks || [])
+      .map((t) => `- [${t.completed ? 'x' : ' '}] ${t.text}`)
+      .join('\n');
+
+    const summary = `# ${project.title}\n${project.description ? project.description + '\n' : ''}Priority: ${
+      project.priority || 'Medium'
+    }\nDue Date: ${project.dueDate || 'None'}\n\n### Tasks\n${taskList || 'No tasks listed.'}`;
+
+    navigator.clipboard.writeText(summary);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
+  };
+
   const completedCount = project.tasks?.filter((t) => t.completed).length || 0;
   const totalTasks = project.tasks?.length || 0;
   const progressPercentage = totalTasks > 0 ? Math.round((completedCount / totalTasks) * 100) : 0;
@@ -135,7 +151,13 @@ export function ProjectItem({ project, isDark, themeColor, isHighlighted }) {
   return (
     <li
       id={`project-${project.id}`}
-      className={`rounded-2xl border p-5 shadow-sm transition-all duration-300 list-none flex flex-col justify-between ${
+      className={`rounded-2xl border p-5 shadow-sm transition-all duration-300 list-none flex flex-col justify-between relative ${
+        project.isPinned
+          ? isDark
+            ? 'ring-1 ring-amber-400/50 bg-slate-800/90'
+            : 'ring-1 ring-amber-400/60 bg-amber-50/20'
+          : ''
+      } ${
         isHighlighted
           ? 'ring-2 ring-indigo-500 scale-[1.02] shadow-lg shadow-indigo-500/20'
           : ''
@@ -295,14 +317,43 @@ export function ProjectItem({ project, isDark, themeColor, isHighlighted }) {
 
             <div className="flex items-center gap-1 shrink-0">
               <button
+                onClick={() => togglePinProject(project.id)}
+                className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                  project.isPinned
+                    ? 'text-amber-400 bg-amber-400/10'
+                    : isDark
+                    ? 'text-slate-500 hover:text-amber-400 hover:bg-slate-700'
+                    : 'text-slate-400 hover:text-amber-500 hover:bg-slate-100'
+                }`}
+                title={project.isPinned ? 'Unpin Project' : 'Pin to Top'}
+              >
+                ⭐
+              </button>
+
+              <button
+                onClick={handleCopyMarkdown}
+                className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                  isCopied
+                    ? 'text-emerald-500 bg-emerald-500/10 font-bold'
+                    : isDark
+                    ? 'text-slate-400 hover:text-white hover:bg-slate-700'
+                    : 'text-slate-400 hover:text-indigo-600 hover:bg-indigo-50'
+                }`}
+                title="Copy Markdown Summary"
+              >
+                {isCopied ? '✓' : '📋'}
+              </button>
+
+              <button
                 onClick={() => cloneProject(project.id)}
                 className={`p-1.5 rounded-lg transition-all cursor-pointer ${
                   isDark ? 'text-slate-400 hover:text-white hover:bg-slate-700' : 'text-slate-400 hover:text-indigo-600 hover:bg-indigo-50'
                 }`}
                 title="Clone Project"
               >
-                📋
+                📑
               </button>
+
               <button
                 onClick={handleStartEdit}
                 className={`p-1.5 rounded-lg transition-all cursor-pointer ${
@@ -312,6 +363,7 @@ export function ProjectItem({ project, isDark, themeColor, isHighlighted }) {
               >
                 ✏️
               </button>
+
               <button
                 onClick={() => deleteProject(project.id)}
                 className={`p-1.5 rounded-lg transition-all cursor-pointer ${

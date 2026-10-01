@@ -4,11 +4,13 @@ import { ProjectItem } from './ProjectItem';
 import { ProjectModal } from './ProjectModal';
 import { SettingsModal } from './SettingsModal';
 import { SearchModal } from './SearchModal';
+import { ShortcutsModal } from './ShortcutsModal';
 
 function App() {
   const { projects } = useProjects();
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isShortcutsModalOpen, setIsShortcutsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
@@ -34,6 +36,7 @@ function App() {
         setIsSearchModalOpen(false);
         setIsProjectModalOpen(false);
         setIsSettingsModalOpen(false);
+        setIsShortcutsModalOpen(false);
         return;
       }
 
@@ -43,6 +46,18 @@ function App() {
       ) {
         e.preventDefault();
         setIsSearchModalOpen((prev) => !prev);
+        return;
+      }
+
+      if (e.key.toLowerCase() === 'n' && !isInputActive) {
+        e.preventDefault();
+        setIsProjectModalOpen(true);
+        return;
+      }
+
+      if (e.key === '?' && !isInputActive) {
+        e.preventDefault();
+        setIsShortcutsModalOpen((prev) => !prev);
       }
     };
 
@@ -101,6 +116,9 @@ function App() {
       return matchesSearch;
     })
     .sort((a, b) => {
+      if (a.isPinned !== b.isPinned) {
+        return a.isPinned ? -1 : 1;
+      }
       if (sortBy === 'newest') return String(b.id).localeCompare(String(a.id));
       if (sortBy === 'dueDate') {
         if (!a.dueDate) return 1;
@@ -152,6 +170,7 @@ function App() {
               className={`flex items-center gap-2 ${currentThemeBg} hover:opacity-90 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-md transition-all cursor-pointer`}
             >
               <span>+ New Project</span>
+              <kbd className="px-1.5 py-0.5 rounded text-[10px] bg-white/20 font-mono">N</kbd>
             </button>
           </div>
         </header>
@@ -247,7 +266,7 @@ function App() {
                   : 'bg-white border-slate-300 text-slate-500'
               }`}
             >
-              <p className="font-medium text-sm">No projects found. Click "New Project" to create one! 🚀</p>
+              <p className="font-medium text-sm">No projects found. Press "N" to create one! 🚀</p>
             </div>
           ) : (
             <ul className={`${gridClass} p-0`}>
@@ -265,17 +284,43 @@ function App() {
         </div>
       </div>
 
-      <button
-        onClick={() => setIsSearchModalOpen(true)}
-        className={`fixed bottom-20 right-6 w-12 h-12 border rounded-full shadow-lg flex items-center justify-center text-xl transition-all active:scale-95 cursor-pointer z-40 ${
-          settings.isDark
-            ? 'bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700'
-            : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
-        }`}
-        title="Search (/ or Alt+K)"
-      >
-        🔍
-      </button>
+      <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-40">
+        <button
+          onClick={() => setIsShortcutsModalOpen(true)}
+          className={`w-12 h-12 border rounded-full shadow-lg flex items-center justify-center text-sm font-black transition-all active:scale-95 cursor-pointer ${
+            settings.isDark
+              ? 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+              : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+          }`}
+          title="Shortcuts (?)"
+        >
+          ?
+        </button>
+
+        <button
+          onClick={() => setIsSearchModalOpen(true)}
+          className={`w-12 h-12 border rounded-full shadow-lg flex items-center justify-center text-xl transition-all active:scale-95 cursor-pointer ${
+            settings.isDark
+              ? 'bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700'
+              : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+          }`}
+          title="Search (/ or Alt+K)"
+        >
+          🔍
+        </button>
+
+        <button
+          onClick={() => setIsSettingsModalOpen(true)}
+          className={`w-12 h-12 border rounded-full shadow-lg flex items-center justify-center text-xl transition-all hover:rotate-45 active:scale-95 cursor-pointer ${
+            settings.isDark
+              ? 'bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700'
+              : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+          }`}
+          title="Settings"
+        >
+          ⚙️
+        </button>
+      </div>
 
       <SearchModal
         isOpen={isSearchModalOpen}
@@ -296,17 +341,11 @@ function App() {
         isDark={settings.isDark}
       />
 
-      <button
-        onClick={() => setIsSettingsModalOpen(true)}
-        className={`fixed bottom-6 right-6 w-12 h-12 border rounded-full shadow-lg flex items-center justify-center text-xl transition-all hover:rotate-45 active:scale-95 cursor-pointer z-40 ${
-          settings.isDark
-            ? 'bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700'
-            : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
-        }`}
-        title="Settings"
-      >
-        ⚙️
-      </button>
+      <ShortcutsModal
+        isOpen={isShortcutsModalOpen}
+        onClose={() => setIsShortcutsModalOpen(false)}
+        isDark={settings.isDark}
+      />
 
       <ProjectModal
         isOpen={isProjectModalOpen}
