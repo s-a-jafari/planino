@@ -1,4 +1,4 @@
-import { createContext, useContext } from 'react';
+import { createContext, useContext, useState } from 'react';
 import { useLocalStorage } from '../useLocalStorage';
 
 const ProjectContext = createContext();
@@ -43,6 +43,8 @@ export function ProjectProvider({ children }) {
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
+
+  const [lastDeletedProject, setLastDeletedProject] = useState(null);
 
   const logActivity = (text) => {
     const newEntry = {
@@ -94,6 +96,9 @@ export function ProjectProvider({ children }) {
 
   const deleteProject = (projectId) => {
     const target = (projects || []).find((p) => String(p.id) === String(projectId));
+    if (target) {
+      setLastDeletedProject(target);
+    }
     setProjects((prev) => {
       const safe = Array.isArray(prev) ? prev : [];
       return safe.filter((p) => String(p.id) !== String(projectId));
@@ -101,6 +106,14 @@ export function ProjectProvider({ children }) {
     if (target) {
       logActivity(`Deleted project "${target.title}"`);
     }
+  };
+
+  const undoDelete = () => {
+    if (!lastDeletedProject) return false;
+    setProjects((prev) => [lastDeletedProject, ...(Array.isArray(prev) ? prev : [])]);
+    logActivity(`Restored "${lastDeletedProject.title}"`);
+    setLastDeletedProject(null);
+    return true;
   };
 
   const cloneProject = (projectId) => {
@@ -250,10 +263,12 @@ export function ProjectProvider({ children }) {
       value={{
         projects: Array.isArray(projects) ? projects : [],
         activities,
+        lastDeletedProject,
         clearActivities,
         addProject,
         togglePinProject,
         deleteProject,
+        undoDelete,
         cloneProject,
         editProject,
         moveProjectStage,

@@ -9,7 +9,16 @@ import { ActivityModal } from './ActivityModal';
 import { playTone, triggerConfetti } from './utils/fx';
 
 function App() {
-  const { projects, activities, clearActivities, moveProjectStage } = useProjects();
+  const {
+    projects,
+    activities,
+    lastDeletedProject,
+    clearActivities,
+    moveProjectStage,
+    importProjects,
+    undoDelete,
+  } = useProjects();
+
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isShortcutsModalOpen, setIsShortcutsModalOpen] = useState(false);
@@ -17,11 +26,15 @@ function App() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [smartFilter, setSmartFilter] = useState('all');
   const [selectedTag, setSelectedTag] = useState(null);
   const [sortBy, setSortBy] = useState('newest');
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [highlightedProjectId, setHighlightedProjectId] = useState(null);
   const [dragOverCol, setDragOverCol] = useState(null);
+  const [isZenMode, setIsZenMode] = useState(false);
+
+  const [toastMessage, setToastMessage] = useState(null);
 
   const [focusProject, setFocusProject] = useState(null);
   const [focusSeconds, setFocusSeconds] = useState(25 * 60);
@@ -36,6 +49,26 @@ function App() {
     notifications: true,
   });
 
+  const showToast = (msg, canUndo = false) => {
+    setToastMessage({ text: msg, canUndo });
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 4500);
+  };
+
+  const handleTriggerUndo = () => {
+    if (undoDelete()) {
+      showToast('Project restored successfully');
+      playTone('task');
+    }
+  };
+
+  useEffect(() => {
+    if (lastDeletedProject) {
+      showToast(`Deleted "${lastDeletedProject.title}"`, true);
+    }
+  }, [lastDeletedProject]);
+
   useEffect(() => {
     let timer = null;
     if (isFocusActive && focusSeconds > 0) {
@@ -46,7 +79,7 @@ function App() {
       setIsFocusActive(false);
       playTone('complete');
       triggerConfetti();
-      alert(`Focus session finished for: ${focusProject ? focusProject.title : 'Task'}! Great job! 🎉`);
+      showToast(`Focus session completed for "${focusProject?.title}" 🎉`);
     }
     return () => clearInterval(timer);
   }, [isFocusActive, focusSeconds, focusProject]);
@@ -56,6 +89,12 @@ function App() {
       const isInputActive =
         ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName) ||
         document.activeElement?.isContentEditable;
+
+      if ((e.ctrlKey || e.metaKey) && e.code === 'KeyZ' && !isInputActive) {
+        e.preventDefault();
+        handleTriggerUndo();
+        return;
+      }
 
       if (e.key === 'Escape') {
         setIsSearchModalOpen(false);
@@ -89,7 +128,109 @@ function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [lastDeletedProject]);
+
+  const handleExecuteCommand = (action) => {
+    switch (action) {
+      case 'NEW_PROJECT':
+        setIsProjectModalOpen(true);
+        break;
+      case 'TOGGLE_ZEN':
+        setIsZenMode((prev) => !prev);
+        showToast(isZenMode ? 'Exited Zen Mode' : 'Entered Zen Mode');
+        break;
+      case 'VIEW_BOARD':
+        setSettings((s) => ({ ...s, layout: 'board' }));
+        showToast('Switched to Board View');
+        break;
+      case 'VIEW_GRID':
+        setSettings((s) => ({ ...s, layout: 'grid' }));
+        showToast('Switched to Grid View');
+        break;
+      case 'VIEW_LIST':
+        setSettings((s) => ({ ...s, layout: 'list' }));
+        showToast('Switched to List View');
+        break;
+      case 'TOGGLE_THEME':
+        setSettings((s) => ({ ...s, isDark: !s.isDark }));
+        showToast('Theme updated');
+        break;
+      case 'OPEN_ACTIVITY':
+        setIsActivityModalOpen(true);
+        break;
+      case 'UNDO_DELETE':
+        handleTriggerUndo();
+        break;
+      case 'EXPORT_JSON': {
+        const dataStr =
+          'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(projects, null, 2));
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute('href', dataStr);
+        downloadAnchor.setAttribute(
+          'download',
+          `planino-backup-${new Date().toISOString().split('T')[0]}.json`
+        );
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+        showToast('Workspace backup downloaded');
+        break;
+      }
+      default:
+        break;
+    }
+  };
+
+  const handleLoadDemoData = () => {
+    const demoData = [
+      {
+        id: 'demo-1',
+        title: 'Authentication Microservice 🛡️',
+        description: 'Implement OAuth2 and session token rotation.',
+        dueDate: '2026-10-30',
+        priority: 'Urgent',
+        tags: ['Backend', 'Security'],
+        isPinned: true,
+        createdAt: new Date().toISOString(),
+        tasks: [
+          { id: 't1', text: 'JWT middleware', completed: true },
+          { id: 't2', text: 'Refresh token revocation', completed: true },
+          { id: 't3', text: 'Audit logging endpoints', completed: false },
+        ],
+      },
+      {
+        id: 'demo-2',
+        title: 'Design System Overhaul 🎨',
+        description: 'Audit color tokens and unify border radii across modals.',
+        dueDate: '2026-10-03',
+        priority: 'High',
+        tags: ['Design', 'UI'],
+        isPinned: false,
+        createdAt: new Date().toISOString(),
+        tasks: [
+          { id: 't4', text: 'Sync Tailwind config', completed: true },
+          { id: 't5', text: 'Review typography hierarchy', completed: false },
+        ],
+      },
+      {
+        id: 'demo-3',
+        title: 'Performance Benchmark ⚡',
+        description: 'Profile render cycles and reduce unnecessary Context updates.',
+        dueDate: '2026-11-05',
+        priority: 'Medium',
+        tags: ['Performance', 'React'],
+        isPinned: false,
+        createdAt: new Date().toISOString(),
+        tasks: [
+          { id: 't6', text: 'Audit bundle size', completed: false },
+          { id: 't7', text: 'Benchmark memoized selectors', completed: false },
+        ],
+      },
+    ];
+
+    importProjects(demoData);
+    showToast('Loaded demo dataset successfully');
+  };
 
   const colorClasses = {
     indigo: 'bg-indigo-600',
@@ -133,6 +274,21 @@ function App() {
       const pCompleted = project.tasks?.filter((t) => t.completed).length || 0;
       const isCompleted = pTotal > 0 && pCompleted === pTotal;
 
+      const matchesSmartFilter = (() => {
+        if (smartFilter === 'pinned') return project.isPinned;
+        if (smartFilter === 'urgent') return project.priority === 'Urgent';
+        if (smartFilter === 'overdue') return project.dueDate && project.dueDate < todayStr;
+        if (smartFilter === 'dueSoon') {
+          if (!project.dueDate) return false;
+          const diffDays = Math.ceil(
+            (new Date(project.dueDate) - new Date(todayStr)) / (1000 * 60 * 60 * 24)
+          );
+          return diffDays >= 0 && diffDays <= 3;
+        }
+        return true;
+      })();
+
+      if (!matchesSmartFilter) return false;
       if (!matchesTag) return false;
       if (filterStatus === 'completed') return matchesSearch && isCompleted;
       if (filterStatus === 'in-progress') return matchesSearch && !isCompleted;
@@ -200,13 +356,28 @@ function App() {
 
   return (
     <div
-      className={`min-h-screen py-10 px-4 sm:px-8 relative transition-colors duration-300 ${
+      className={`min-h-screen py-6 px-4 sm:px-8 relative transition-colors duration-300 ${
         settings.isDark ? 'bg-slate-900 text-slate-100' : 'bg-slate-50 text-slate-800'
       }`}
     >
-      <div className="max-w-6xl mx-auto">
+      {toastMessage && (
+        <div className="fixed top-6 right-6 z-50 flex items-center gap-3 px-4 py-2.5 rounded-xl shadow-2xl bg-indigo-600 text-white text-xs font-semibold animate-in fade-in slide-in-from-top-3">
+          <span>✨</span>
+          <span>{toastMessage.text}</span>
+          {toastMessage.canUndo && (
+            <button
+              onClick={handleTriggerUndo}
+              className="ml-2 px-2 py-0.5 rounded bg-white text-indigo-700 font-bold hover:bg-indigo-50 transition-all cursor-pointer"
+            >
+              Undo ↩️
+            </button>
+          )}
+        </div>
+      )}
+
+      <div className={isZenMode ? 'w-full' : 'max-w-6xl mx-auto'}>
         <header
-          className={`flex items-center justify-between mb-8 pb-4 border-b ${
+          className={`flex items-center justify-between mb-6 pb-4 border-b ${
             settings.isDark ? 'border-slate-800' : 'border-slate-200'
           }`}
         >
@@ -217,14 +388,30 @@ function App() {
               P
             </div>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight">Planino</h1>
-              <p className={`text-xs font-medium ${settings.isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                Workspace & Agile Kanban Suite
-              </p>
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Planino</h1>
+              {!isZenMode && (
+                <p className={`text-xs font-medium ${settings.isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                  Workspace & Agile Kanban Suite
+                </p>
+              )}
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsZenMode((prev) => !prev)}
+              className={`p-2 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
+                isZenMode
+                  ? 'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                  : settings.isDark
+                  ? 'border-slate-700 text-slate-300 hover:bg-slate-800'
+                  : 'border-slate-200 text-slate-600 hover:bg-slate-100'
+              }`}
+              title="Toggle Zen Mode"
+            >
+              {isZenMode ? '🧘 Exit Zen' : '🧘 Zen'}
+            </button>
+
             <button
               onClick={() => setIsProjectModalOpen(true)}
               className={`flex items-center gap-2 ${currentThemeBg} hover:opacity-90 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-md transition-all cursor-pointer`}
@@ -286,45 +473,47 @@ function App() {
           </div>
         )}
 
-        <section className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-8">
-          <div
-            className={`p-4 rounded-2xl border transition-all ${
-              settings.isDark ? 'bg-slate-800/60 border-slate-700/60' : 'bg-white border-slate-200'
-            }`}
-          >
-            <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Total Projects</p>
-            <p className="text-2xl font-black mt-1">{totalProjects}</p>
-          </div>
+        {!isZenMode && (
+          <section className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
+            <div
+              className={`p-4 rounded-2xl border transition-all ${
+                settings.isDark ? 'bg-slate-800/60 border-slate-700/60' : 'bg-white border-slate-200'
+              }`}
+            >
+              <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Total Projects</p>
+              <p className="text-2xl font-black mt-1">{totalProjects}</p>
+            </div>
 
-          <div
-            className={`p-4 rounded-2xl border transition-all ${
-              settings.isDark ? 'bg-slate-800/60 border-slate-700/60' : 'bg-white border-slate-200'
-            }`}
-          >
-            <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Total Tasks</p>
-            <p className="text-2xl font-black mt-1">{totalTasks}</p>
-          </div>
+            <div
+              className={`p-4 rounded-2xl border transition-all ${
+                settings.isDark ? 'bg-slate-800/60 border-slate-700/60' : 'bg-white border-slate-200'
+              }`}
+            >
+              <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Total Tasks</p>
+              <p className="text-2xl font-black mt-1">{totalTasks}</p>
+            </div>
 
-          <div
-            className={`p-4 rounded-2xl border transition-all ${
-              settings.isDark ? 'bg-slate-800/60 border-slate-700/60' : 'bg-white border-slate-200'
-            }`}
-          >
-            <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Completed Tasks</p>
-            <p className="text-2xl font-black mt-1 text-emerald-500">{totalCompletedTasks}</p>
-          </div>
+            <div
+              className={`p-4 rounded-2xl border transition-all ${
+                settings.isDark ? 'bg-slate-800/60 border-slate-700/60' : 'bg-white border-slate-200'
+              }`}
+            >
+              <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Completed Tasks</p>
+              <p className="text-2xl font-black mt-1 text-emerald-500">{totalCompletedTasks}</p>
+            </div>
 
-          <div
-            className={`p-4 rounded-2xl border transition-all ${
-              settings.isDark ? 'bg-slate-800/60 border-slate-700/60' : 'bg-white border-slate-200'
-            }`}
-          >
-            <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Overdue Alerts</p>
-            <p className={`text-2xl font-black mt-1 ${overdueCount > 0 ? 'text-rose-500' : 'text-slate-400'}`}>
-              {overdueCount}
-            </p>
-          </div>
-        </section>
+            <div
+              className={`p-4 rounded-2xl border transition-all ${
+                settings.isDark ? 'bg-slate-800/60 border-slate-700/60' : 'bg-white border-slate-200'
+              }`}
+            >
+              <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Overdue Alerts</p>
+              <p className={`text-2xl font-black mt-1 ${overdueCount > 0 ? 'text-rose-500' : 'text-slate-400'}`}>
+                {overdueCount}
+              </p>
+            </div>
+          </section>
+        )}
 
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-6">
           <div className="flex flex-wrap items-center gap-2">
@@ -346,6 +535,32 @@ function App() {
                   }`}
                 >
                   {status === 'all' ? 'All' : status === 'in-progress' ? 'In Progress' : 'Completed'}
+                </button>
+              ))}
+            </div>
+
+            <div
+              className={`p-1 rounded-xl flex items-center gap-1 ${
+                settings.isDark ? 'bg-slate-800/50 border border-slate-700/50' : 'bg-slate-100'
+              }`}
+            >
+              {[
+                { id: 'all', label: 'All' },
+                { id: 'pinned', label: '⭐ Pinned' },
+                { id: 'urgent', label: '🔥 Urgent' },
+                { id: 'overdue', label: '⚠️ Overdue' },
+                { id: 'dueSoon', label: '⏳ Due Soon' },
+              ].map((chip) => (
+                <button
+                  key={chip.id}
+                  onClick={() => setSmartFilter(chip.id)}
+                  className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg transition-all cursor-pointer ${
+                    smartFilter === chip.id
+                      ? 'bg-indigo-600 text-white shadow-sm'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  {chip.label}
                 </button>
               ))}
             </div>
@@ -413,13 +628,31 @@ function App() {
         <div>
           {projects.length === 0 ? (
             <div
-              className={`text-center py-16 rounded-2xl border border-dashed ${
+              className={`text-center py-16 px-4 rounded-2xl border border-dashed flex flex-col items-center justify-center gap-3 ${
                 settings.isDark
                   ? 'bg-slate-800/50 border-slate-700 text-slate-400'
                   : 'bg-white border-slate-300 text-slate-500'
               }`}
             >
-              <p className="font-medium text-sm">No projects found. Press "N" to create one! 🚀</p>
+              <p className="font-semibold text-sm">Your workspace is clean and empty!</p>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => setIsProjectModalOpen(true)}
+                  className={`px-4 py-2 rounded-xl text-xs font-semibold text-white shadow-md cursor-pointer ${currentThemeBg}`}
+                >
+                  + Create New Project
+                </button>
+                <button
+                  onClick={handleLoadDemoData}
+                  className={`px-4 py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+                    settings.isDark
+                      ? 'border-slate-700 hover:bg-slate-700 text-slate-200'
+                      : 'border-slate-200 hover:bg-slate-100 text-slate-700'
+                  }`}
+                >
+                  ⚡ Load Demo Projects
+                </button>
+              </div>
             </div>
           ) : settings.layout === 'board' ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
@@ -521,6 +754,16 @@ function App() {
         }`}
       >
         <button
+          onClick={() => setIsZenMode((prev) => !prev)}
+          className={`w-10 h-10 rounded-full flex items-center justify-center text-sm transition-all cursor-pointer ${
+            isZenMode ? 'text-amber-400' : settings.isDark ? 'text-slate-400 hover:text-white hover:bg-slate-700' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
+          }`}
+          title="Toggle Zen Mode"
+        >
+          🧘
+        </button>
+
+        <button
           onClick={() => setIsActivityModalOpen(true)}
           className={`w-10 h-10 rounded-full flex items-center justify-center text-sm transition-all cursor-pointer ${
             settings.isDark ? 'text-slate-400 hover:text-white hover:bg-slate-700' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
@@ -545,7 +788,7 @@ function App() {
           className={`w-10 h-10 rounded-full flex items-center justify-center text-sm transition-all cursor-pointer ${
             settings.isDark ? 'text-slate-400 hover:text-white hover:bg-slate-700' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
           }`}
-          title="Search (/ or Alt+K)"
+          title="Command Palette (/ or Alt+K)"
         >
           🔍
         </button>
@@ -578,6 +821,7 @@ function App() {
           }, 2500);
         }}
         isDark={settings.isDark}
+        onExecuteCommand={handleExecuteCommand}
       />
 
       <ShortcutsModal

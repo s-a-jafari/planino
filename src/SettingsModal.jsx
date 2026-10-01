@@ -52,6 +52,57 @@ export function SettingsModal({ isOpen, onClose, settings, onUpdateSettings, onR
     }
   };
 
+  const handleLoadDemo = () => {
+    const demoData = [
+      {
+        id: 'demo-1',
+        title: 'Authentication Microservice 🛡️',
+        description: 'Implement OAuth2 and session token rotation.',
+        dueDate: '2026-10-30',
+        priority: 'Urgent',
+        tags: ['Backend', 'Security'],
+        isPinned: true,
+        createdAt: new Date().toISOString(),
+        tasks: [
+          { id: 't1', text: 'JWT middleware', completed: true },
+          { id: 't2', text: 'Refresh token revocation', completed: true },
+          { id: 't3', text: 'Audit logging endpoints', completed: false },
+        ],
+      },
+      {
+        id: 'demo-2',
+        title: 'Design System Overhaul 🎨',
+        description: 'Audit color tokens and unify border radii across modals.',
+        dueDate: '2026-10-14',
+        priority: 'High',
+        tags: ['Design', 'UI'],
+        isPinned: false,
+        createdAt: new Date().toISOString(),
+        tasks: [
+          { id: 't4', text: 'Sync Tailwind config', completed: true },
+          { id: 't5', text: 'Review typography hierarchy', completed: false },
+        ],
+      },
+      {
+        id: 'demo-3',
+        title: 'Performance Benchmark ⚡',
+        description: 'Profile render cycles and reduce unnecessary Context updates.',
+        dueDate: '2026-11-05',
+        priority: 'Medium',
+        tags: ['Performance', 'React'],
+        isPinned: false,
+        createdAt: new Date().toISOString(),
+        tasks: [
+          { id: 't6', text: 'Audit bundle size', completed: false },
+          { id: 't7', text: 'Benchmark memoized selectors', completed: false },
+        ],
+      },
+    ];
+
+    importProjects(demoData);
+    onClose();
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
       <div
@@ -176,6 +227,17 @@ export function SettingsModal({ isOpen, onClose, settings, onUpdateSettings, onR
                 className="hidden"
               />
             </div>
+
+            <button
+              onClick={handleLoadDemo}
+              className={`w-full py-2 px-3 text-xs font-semibold rounded-xl border transition-all cursor-pointer ${
+                settings.isDark
+                  ? 'border-indigo-500/30 bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20'
+                  : 'border-indigo-200 bg-indigo-50 text-indigo-600 hover:bg-indigo-100'
+              }`}
+            >
+              Load Demo Dataset ⚡
+            </button>
 
             <button
               onClick={onResetData}
