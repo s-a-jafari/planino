@@ -9,7 +9,7 @@
 [![Vite](https://img.shields.io/badge/Vite-Fast_Bundler-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
-[Explore Live Demo](https://planino.vercel.app) · [Report Bug](https://github.com/your-username/planino/issues) · [Request Feature](https://github.com/your-username/planino/issues)
+[Explore Live Demo](https://planino.vercel.app) · [Report Bug](https://github.com/s-a-jafari/planino/issues) · [Request Feature](https://github.com/a-s-jafari/planino/issues)
 
 </div>
 
