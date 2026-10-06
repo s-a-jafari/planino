@@ -1,21 +1,59 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useProjects } from './context/ProjectContext';
 import { playTone, triggerConfetti } from './utils/fx';
 
 export function ProjectDetailModal({ isOpen, onClose, projectId, isDark, themeColor, onStartFocus }) {
   const { projects, editProject, addTask, toggleTask, deleteTask, editTask, cloneProject, deleteProject } = useProjects();
+  
+  const project = projects.find((p) => String(p.id) === String(projectId));
+
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [tagsInput, setTagsInput] = useState('');
   const [newTaskText, setNewTaskText] = useState('');
   const [editingTaskId, setEditingTaskId] = useState(null);
   const [editingTaskValue, setEditingTaskValue] = useState('');
+  const [savedFeedback, setSavedFeedback] = useState(false);
 
-  if (!isOpen || !projectId) return null;
+  useEffect(() => {
+    if (project) {
+      setTitle(project.title || '');
+      setDescription(project.description || '');
+      setTagsInput((project.tags || []).join(', '));
+    }
+  }, [project]);
 
-  const project = projects.find((p) => String(p.id) === String(projectId));
-  if (!project) return null;
+  if (!isOpen || !project) return null;
 
-  const completedCount = project.tasks?.filter((t) => t.completed).length || 0;
-  const totalTasks = project.tasks?.length || 0;
-  const progressPercentage = totalTasks > 0 ? Math.round((completedCount / totalTasks) * 100) : 0;
+  const showSavedIndicator = () => {
+    setSavedFeedback(true);
+    setTimeout(() => setSavedFeedback(false), 1500);
+  };
+
+  const handleTitleBlur = () => {
+    if (title.trim() && title.trim() !== project.title) {
+      editProject(project.id, { title: title.trim() });
+      showSavedIndicator();
+    } else {
+      setTitle(project.title);
+    }
+  };
+
+  const handleDescriptionBlur = () => {
+    if (description !== project.description) {
+      editProject(project.id, { description: description.trim() });
+      showSavedIndicator();
+    }
+  };
+
+  const handleTagsBlur = () => {
+    const parsedTags = tagsInput
+      .split(',')
+      .map((t) => t.trim())
+      .filter((t) => t.length > 0);
+    editProject(project.id, { tags: parsedTags });
+    showSavedIndicator();
+  };
 
   const handleAddTask = (e) => {
     e.preventDefault();
@@ -35,6 +73,10 @@ export function ProjectDetailModal({ isOpen, onClose, projectId, isDark, themeCo
     }
     setEditingTaskId(null);
   };
+
+  const completedCount = project.tasks?.filter((t) => t.completed).length || 0;
+  const totalTasks = project.tasks?.length || 0;
+  const progressPercentage = totalTasks > 0 ? Math.round((completedCount / totalTasks) * 100) : 0;
 
   const handleToggle = (taskId, currentlyCompleted) => {
     toggleTask(project.id, taskId);
@@ -67,7 +109,11 @@ export function ProjectDetailModal({ isOpen, onClose, projectId, isDark, themeCo
             <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border ${priorityStyles[project.priority || 'Medium']}`}>
               {project.priority || 'Medium'}
             </span>
-            <span className="text-xs text-slate-400 font-mono">ID-{project.id.slice(-4)}</span>
+            {savedFeedback && (
+              <span className="text-xs text-emerald-400 font-semibold animate-pulse">
+                Saved ✓
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
@@ -95,10 +141,34 @@ export function ProjectDetailModal({ isOpen, onClose, projectId, isDark, themeCo
         <div className="flex-1 overflow-y-auto grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-700/20">
           <div className="p-6 md:col-span-2 space-y-6">
             <div>
-              <h2 className="text-xl font-bold">{project.title}</h2>
-              <p className={`text-xs mt-2 leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                {project.description || 'No description provided for this project.'}
-              </p>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                Project Title (Click to edit)
+              </label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                onBlur={handleTitleBlur}
+                onKeyDown={(e) => e.key === 'Enter' && e.target.blur()}
+                className={`w-full text-xl font-bold bg-transparent border-b border-transparent hover:border-slate-500/40 focus:border-indigo-500 outline-none transition-colors px-1 py-1 rounded ${
+                  isDark ? 'text-white' : 'text-slate-800'
+                }`}
+                placeholder="Enter project title..."
+              />
+
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-4 mb-1">
+                Description
+              </label>
+              <textarea
+                rows={3}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                onBlur={handleDescriptionBlur}
+                className={`w-full text-xs bg-transparent border border-transparent hover:border-slate-500/30 focus:border-indigo-500 outline-none transition-colors p-2.5 rounded-xl resize-none ${
+                  isDark ? 'bg-slate-700/30 text-slate-300 placeholder:text-slate-500' : 'bg-slate-50 text-slate-700 placeholder:text-slate-400'
+                }`}
+                placeholder="Add project description and notes..."
+              />
             </div>
 
             <div>
@@ -137,7 +207,7 @@ export function ProjectDetailModal({ isOpen, onClose, projectId, isDark, themeCo
                 </button>
               </form>
 
-              <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1">
+              <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1">
                 {project.tasks && project.tasks.length > 0 ? (
                   project.tasks.map((task) => (
                     <div
@@ -207,7 +277,10 @@ export function ProjectDetailModal({ isOpen, onClose, projectId, isDark, themeCo
               <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Priority</p>
               <select
                 value={project.priority || 'Medium'}
-                onChange={(e) => editProject(project.id, { priority: e.target.value })}
+                onChange={(e) => {
+                  editProject(project.id, { priority: e.target.value });
+                  showSavedIndicator();
+                }}
                 className={`w-full px-3 py-1.5 text-xs font-semibold rounded-xl border outline-none cursor-pointer ${
                   isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-slate-200 text-slate-800'
                 }`}
@@ -224,7 +297,10 @@ export function ProjectDetailModal({ isOpen, onClose, projectId, isDark, themeCo
               <input
                 type="date"
                 value={project.dueDate || ''}
-                onChange={(e) => editProject(project.id, { dueDate: e.target.value })}
+                onChange={(e) => {
+                  editProject(project.id, { dueDate: e.target.value });
+                  showSavedIndicator();
+                }}
                 className={`w-full px-3 py-1.5 text-xs font-semibold rounded-xl border outline-none cursor-pointer ${
                   isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-slate-200 text-slate-800'
                 }`}
@@ -232,23 +308,18 @@ export function ProjectDetailModal({ isOpen, onClose, projectId, isDark, themeCo
             </div>
 
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Tags</p>
-              <div className="flex flex-wrap gap-1">
-                {project.tags && project.tags.length > 0 ? (
-                  project.tags.map((tag, idx) => (
-                    <span
-                      key={idx}
-                      className={`text-[10px] px-2 py-0.5 rounded-md font-medium ${
-                        isDark ? 'bg-slate-700 text-slate-300' : 'bg-slate-200 text-slate-700'
-                      }`}
-                    >
-                      #{tag}
-                    </span>
-                  ))
-                ) : (
-                  <span className="text-xs text-slate-400 italic">No tags</span>
-                )}
-              </div>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Tags (comma separated)</p>
+              <input
+                type="text"
+                value={tagsInput}
+                onChange={(e) => setTagsInput(e.target.value)}
+                onBlur={handleTagsBlur}
+                onKeyDown={(e) => e.key === 'Enter' && e.target.blur()}
+                placeholder="tag1, tag2..."
+                className={`w-full px-3 py-1.5 text-xs font-semibold rounded-xl border outline-none ${
+                  isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-slate-200 text-slate-800'
+                }`}
+              />
             </div>
 
             <div className="pt-4 border-t border-slate-700/20 space-y-2">

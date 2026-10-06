@@ -256,77 +256,77 @@ export function ProjectItem({ project, isDark, themeColor, isHighlighted, onTagC
               </button>
             </div>
 
-            {isMenuOpen && (
-              <div
-                className={`absolute right-0 ${
-                  openUpward ? 'bottom-8' : 'top-8'
-                } w-44 rounded-xl shadow-2xl border p-1 z-30 animate-in fade-in zoom-in-95 duration-150 ${
-                  isDark ? 'bg-slate-800 border-slate-700 text-slate-200 shadow-black/60' : 'bg-white border-slate-200 text-slate-700 shadow-slate-300/60'
+          {isMenuOpen && (
+            <div
+              className={`absolute right-0 ${
+                openUpward ? 'bottom-8' : 'top-8'
+              } w-44 rounded-xl shadow-2xl border p-1 z-30 animate-in fade-in zoom-in-95 duration-150 ${
+                isDark ? 'bg-slate-800 border-slate-700 text-slate-200 shadow-black/60' : 'bg-white border-slate-200 text-slate-700 shadow-slate-300/60'
+              }`}
+            >
+              <button
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  onOpenDetail && onOpenDetail(project.id);
+                }}
+                className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg transition-all text-left cursor-pointer ${
+                  isDark ? 'hover:bg-slate-700 hover:text-white' : 'hover:bg-slate-50 hover:text-slate-900'
                 }`}
               >
-                <button
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    onOpenDetail && onOpenDetail(project.id);
-                  }}
-                  className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg transition-all text-left cursor-pointer ${
-                    isDark ? 'hover:bg-slate-700 hover:text-white' : 'hover:bg-slate-50 hover:text-slate-900'
-                  }`}
-                >
-                  <span>🔍</span>
-                  <span>View Details</span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    onStartFocus && onStartFocus(project);
-                  }}
-                  className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg transition-all text-left cursor-pointer ${
-                    isDark ? 'hover:bg-slate-700 hover:text-white' : 'hover:bg-slate-50 hover:text-slate-900'
-                  }`}
-                >
-                  <span>⏱</span>
-                  <span>Focus Timer</span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    cloneProject(project.id);
-                  }}
-                  className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg transition-all text-left cursor-pointer ${
-                    isDark ? 'hover:bg-slate-700 hover:text-white' : 'hover:bg-slate-50 hover:text-slate-900'
-                  }`}
-                >
-                  <span>📑</span>
-                  <span>Duplicate</span>
-                </button>
-
-                <button
-                  onClick={handleCopyMarkdown}
-                  className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg transition-all text-left cursor-pointer ${
-                    isDark ? 'hover:bg-slate-700 hover:text-white' : 'hover:bg-slate-50 hover:text-slate-900'
-                  }`}
-                >
-                  <span>{isCopied ? '✓' : '📋'}</span>
-                  <span>{isCopied ? 'Copied!' : 'Copy Markdown'}</span>
-                </button>
-
-                <div className={`my-1 border-t ${isDark ? 'border-slate-700' : 'border-slate-100'}`} />
-
-                <button
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    deleteProject(project.id);
-                  }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-rose-500 rounded-lg hover:bg-rose-500/10 transition-all text-left cursor-pointer"
-                >
-                  <span>🗑</span>
-                  <span>Delete Project</span>
-                </button>
-              </div>
-            )}
+                <span>✏️</span>
+                <span>Edit Details</span>
+              </button>
+              
+              <button
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  onStartFocus && onStartFocus(project);
+                }}
+                className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg transition-all text-left cursor-pointer ${
+                  isDark ? 'hover:bg-slate-700 hover:text-white' : 'hover:bg-slate-50 hover:text-slate-900'
+                }`}
+              >
+                <span>⏱</span>
+                <span>Focus Timer</span>
+              </button>
+              
+              <button
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  cloneProject(project.id);
+                }}
+                className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg transition-all text-left cursor-pointer ${
+                  isDark ? 'hover:bg-slate-700 hover:text-white' : 'hover:bg-slate-50 hover:text-slate-900'
+                }`}
+              >
+                <span>📑</span>
+                <span>Duplicate</span>
+              </button>
+              
+              <button
+                onClick={handleCopyMarkdown}
+                className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg transition-all text-left cursor-pointer ${
+                  isDark ? 'hover:bg-slate-700 hover:text-white' : 'hover:bg-slate-50 hover:text-slate-900'
+                }`}
+              >
+                <span>{isCopied ? '✓' : '📋'}</span>
+                <span>{isCopied ? 'Copied!' : 'Copy Markdown'}</span>
+              </button>
+              
+              <div className={`my-1 border-t ${isDark ? 'border-slate-700' : 'border-slate-100'}`} />
+              
+              <button
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  deleteProject(project.id);
+                }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-rose-500 rounded-lg hover:bg-rose-500/10 transition-all text-left cursor-pointer"
+              >
+                <span>🗑</span>
+                <span>Delete Project</span>
+              </button>
+            </div>
+          )}
           </div>
         </div>
 

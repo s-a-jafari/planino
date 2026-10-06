@@ -360,18 +360,20 @@ function App() {
 
   return (
     <div
-      className={`min-h-screen py-6 px-4 sm:px-8 relative transition-colors duration-300 ${
+      className={`min-h-screen py-5 px-3 sm:px-8 relative transition-colors duration-300 ${
         settings.isDark ? 'bg-slate-900 text-slate-100' : 'bg-slate-50 text-slate-800'
       }`}
     >
       {toastMessage && (
-        <div className="fixed top-6 right-6 z-50 flex items-center gap-3 px-4 py-2.5 rounded-xl shadow-2xl bg-indigo-600 text-white text-xs font-semibold animate-in fade-in slide-in-from-top-3">
-          <span>✨</span>
-          <span>{toastMessage.text}</span>
+        <div className="fixed top-4 right-4 left-4 sm:left-auto sm:right-6 sm:top-6 z-50 flex items-center justify-between sm:justify-start gap-3 px-4 py-2.5 rounded-xl shadow-2xl bg-indigo-600 text-white text-xs font-semibold animate-in fade-in slide-in-from-top-3">
+          <div className="flex items-center gap-2 truncate">
+            <span>✨</span>
+            <span className="truncate">{toastMessage.text}</span>
+          </div>
           {toastMessage.canUndo && (
             <button
               onClick={handleTriggerUndo}
-              className="ml-2 px-2 py-0.5 rounded bg-white text-indigo-700 font-bold hover:bg-indigo-50 transition-all cursor-pointer"
+              className="shrink-0 px-2 py-0.5 rounded bg-white text-indigo-700 font-bold hover:bg-indigo-50 transition-all cursor-pointer"
             >
               Undo ↩️
             </button>
@@ -381,30 +383,31 @@ function App() {
 
       <div className={isZenMode ? 'w-full' : 'max-w-6xl mx-auto'}>
         <header
-          className={`flex items-center justify-between mb-5 pb-4 border-b ${
+          className={`flex items-center justify-between gap-3 mb-5 pb-4 border-b ${
             settings.isDark ? 'border-slate-800' : 'border-slate-200'
           }`}
         >
-          <div className="flex items-center gap-3">
-            <div
-              className={`w-10 h-10 rounded-xl ${currentThemeBg} flex items-center justify-center text-white shadow-lg font-bold text-xl transition-colors`}
-            >
-              P
-            </div>
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Planino</h1>
+          <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
+            <img
+              src="/logo.png"
+              alt="Planino Logo"
+              className="w-11 h-11 sm:w-14 sm:h-14 object-contain mt-0.5 shrink-0"
+            />
+
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-2xl font-bold tracking-tight truncate">Planino</h1>
               {!isZenMode && (
-                <p className={`text-xs font-medium ${settings.isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                <p className={`text-[11px] sm:text-xs font-medium truncate ${settings.isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                   Workspace & Agile Kanban Suite
                 </p>
               )}
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={() => setIsZenMode((prev) => !prev)}
-              className={`px-3 py-2 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
+              className={`px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
                 isZenMode
                   ? 'bg-amber-500/10 text-amber-500 border-amber-500/20'
                   : settings.isDark
@@ -413,74 +416,76 @@ function App() {
               }`}
               title="Toggle Zen Mode"
             >
-              {isZenMode ? '🧘 Exit Zen' : '🧘 Zen'}
+              {isZenMode ? '🧘 Exit' : '🧘 Zen'}
             </button>
 
             <button
               onClick={() => setIsProjectModalOpen(true)}
-              className={`flex items-center gap-2 ${currentThemeBg} hover:opacity-90 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-md transition-all cursor-pointer`}
+              className={`flex items-center gap-1.5 sm:gap-2 ${currentThemeBg} hover:opacity-90 text-white text-xs font-semibold px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl shadow-md transition-all cursor-pointer`}
             >
-              <span>+ New Project</span>
-              <kbd className="px-1.5 py-0.5 rounded text-[10px] bg-white/20 font-mono">N</kbd>
+              <span>+ New</span>
+              <kbd className="hidden sm:inline-block px-1.5 py-0.5 rounded text-[10px] bg-white/20 font-mono">N</kbd>
             </button>
           </div>
         </header>
 
         {focusProject && (
           <div
-            className={`mb-5 p-3 rounded-2xl border flex items-center justify-between shadow-lg transition-all animate-in fade-in slide-in-from-top-2 ${
+            className={`mb-5 p-3 sm:p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg transition-all animate-in fade-in slide-in-from-top-2 ${
               settings.isDark ? 'bg-slate-800/90 border-indigo-500/40' : 'bg-white border-indigo-200'
             }`}
           >
             <div className="flex items-center gap-3">
               <span className="text-xl">⏱️</span>
-              <div>
-                <p className="text-xs font-semibold">Focus Session: {focusProject.title}</p>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold truncate">Focus: {focusProject.title}</p>
                 <p className="text-[11px] text-slate-400">Pomodoro Deep Work Mode</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <span className="font-mono text-xl font-bold text-indigo-500">{formatTimer(focusSeconds)}</span>
+            <div className="flex items-center justify-between sm:justify-end gap-2.5">
+              <span className="font-mono text-lg sm:text-xl font-bold text-indigo-500">{formatTimer(focusSeconds)}</span>
 
-              <button
-                onClick={() => setIsFocusActive((prev) => !prev)}
-                className={`px-3 py-1 rounded-xl text-xs font-semibold text-white transition-all cursor-pointer ${
-                  isFocusActive ? 'bg-amber-500 hover:bg-amber-600' : 'bg-emerald-600 hover:bg-emerald-700'
-                }`}
-              >
-                {isFocusActive ? 'Pause' : 'Start'}
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setIsFocusActive((prev) => !prev)}
+                  className={`px-3 py-1 rounded-xl text-xs font-semibold text-white transition-all cursor-pointer ${
+                    isFocusActive ? 'bg-amber-500 hover:bg-amber-600' : 'bg-emerald-600 hover:bg-emerald-700'
+                  }`}
+                >
+                  {isFocusActive ? 'Pause' : 'Start'}
+                </button>
 
-              <button
-                onClick={() => {
-                  setIsFocusActive(false);
-                  setFocusSeconds(25 * 60);
-                }}
-                className={`px-2 py-1 rounded-xl text-xs font-medium cursor-pointer ${
-                  settings.isDark ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-                }`}
-              >
-                Reset
-              </button>
+                <button
+                  onClick={() => {
+                    setIsFocusActive(false);
+                    setFocusSeconds(25 * 60);
+                  }}
+                  className={`px-2 py-1 rounded-xl text-xs font-medium cursor-pointer ${
+                    settings.isDark ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                  }`}
+                >
+                  Reset
+                </button>
 
-              <button
-                onClick={() => {
-                  setIsFocusActive(false);
-                  setFocusProject(null);
-                }}
-                className="text-slate-400 hover:text-rose-500 text-sm p-1 cursor-pointer"
-              >
-                ✕
-              </button>
+                <button
+                  onClick={() => {
+                    setIsFocusActive(false);
+                    setFocusProject(null);
+                  }}
+                  className="text-slate-400 hover:text-rose-500 text-sm p-1 cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
           </div>
         )}
 
         {!isZenMode && showStats && (
-          <section className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-5 animate-in fade-in duration-200">
+          <section className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4 mb-5 animate-in fade-in duration-200">
             <div
-              className={`p-3.5 rounded-2xl border transition-all ${
+              className={`p-3 sm:p-3.5 rounded-2xl border transition-all ${
                 settings.isDark ? 'bg-slate-800/60 border-slate-700/60' : 'bg-white border-slate-200'
               }`}
             >
@@ -489,7 +494,7 @@ function App() {
             </div>
 
             <div
-              className={`p-3.5 rounded-2xl border transition-all ${
+              className={`p-3 sm:p-3.5 rounded-2xl border transition-all ${
                 settings.isDark ? 'bg-slate-800/60 border-slate-700/60' : 'bg-white border-slate-200'
               }`}
             >
@@ -498,16 +503,16 @@ function App() {
             </div>
 
             <div
-              className={`p-3.5 rounded-2xl border transition-all ${
+              className={`p-3 sm:p-3.5 rounded-2xl border transition-all ${
                 settings.isDark ? 'bg-slate-800/60 border-slate-700/60' : 'bg-white border-slate-200'
               }`}
             >
-              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Completed Tasks</p>
+              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Completed</p>
               <p className="text-xl sm:text-2xl font-black mt-0.5 text-emerald-500">{totalCompletedTasks}</p>
             </div>
 
             <div
-              className={`p-3.5 rounded-2xl border transition-all ${
+              className={`p-3 sm:p-3.5 rounded-2xl border transition-all ${
                 settings.isDark ? 'bg-slate-800/60 border-slate-700/60' : 'bg-white border-slate-200'
               }`}
             >
@@ -519,7 +524,7 @@ function App() {
           </section>
         )}
 
-        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 mb-5 p-2 rounded-2xl border transition-colors bg-opacity-50">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 mb-5 p-2 sm:p-2.5 rounded-2xl border transition-colors bg-opacity-50">
           <div className="flex flex-wrap items-center gap-2">
             <div
               className={`p-1 rounded-xl flex gap-1 ${
@@ -530,7 +535,7 @@ function App() {
                 <button
                   key={status}
                   onClick={() => setFilterStatus(status)}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg capitalize transition-all cursor-pointer ${
+                  className={`px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-lg capitalize transition-all cursor-pointer ${
                     filterStatus === status
                       ? settings.isDark
                         ? 'bg-slate-700 text-white shadow-sm'
@@ -546,7 +551,7 @@ function App() {
             <select
               value={smartFilter}
               onChange={(e) => setSmartFilter(e.target.value)}
-              className={`text-xs font-semibold px-3 py-1.5 rounded-xl border outline-none cursor-pointer ${
+              className={`text-xs font-semibold px-2.5 sm:px-3 py-1.5 rounded-xl border outline-none cursor-pointer ${
                 settings.isDark
                   ? 'bg-slate-800 border-slate-700 text-slate-300'
                   : 'bg-white border-slate-200 text-slate-700'
@@ -560,7 +565,7 @@ function App() {
             </select>
 
             {selectedTag && (
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 text-xs font-semibold">
+              <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 text-xs font-semibold">
                 <span>#{selectedTag}</span>
                 <button
                   onClick={() => setSelectedTag(null)}
@@ -572,7 +577,7 @@ function App() {
             )}
           </div>
 
-          <div className="flex items-center justify-between md:justify-end gap-2.5">
+          <div className="flex items-center justify-between md:justify-end gap-2">
             {!isZenMode && (
               <button
                 onClick={() => setShowStats((prev) => !prev)}
@@ -617,7 +622,7 @@ function App() {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className={`text-xs font-semibold px-3 py-1.5 rounded-xl outline-none border cursor-pointer ${
+              className={`text-xs font-semibold px-2.5 sm:px-3 py-1.5 rounded-xl outline-none border cursor-pointer ${
                 settings.isDark
                   ? 'bg-slate-800 border-slate-700 text-white'
                   : 'bg-white border-slate-200 text-slate-800'
@@ -641,7 +646,7 @@ function App() {
               }`}
             >
               <p className="font-semibold text-sm">Your workspace is clean and empty!</p>
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center justify-center gap-2">
                 <button
                   onClick={() => setIsProjectModalOpen(true)}
                   className={`px-4 py-2 rounded-xl text-xs font-semibold text-white shadow-md cursor-pointer ${currentThemeBg}`}
@@ -731,7 +736,7 @@ function App() {
             <ul
               className={
                 settings.layout === 'grid'
-                  ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 p-0'
+                  ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 p-0'
                   : 'flex flex-col gap-3.5 max-w-2xl mx-auto p-0'
               }
             >
@@ -757,7 +762,7 @@ function App() {
       </div>
 
       <div
-        className={`fixed bottom-6 right-6 flex flex-col items-center gap-1.5 p-1.5 rounded-2xl border shadow-2xl backdrop-blur-md z-40 transition-all ${
+        className={`fixed bottom-4 right-4 sm:bottom-6 sm:right-6 flex flex-col items-center gap-1.5 p-1.5 rounded-2xl border shadow-2xl backdrop-blur-md z-40 transition-all ${
           settings.isDark ? 'bg-slate-800/95 border-slate-700 shadow-black/40' : 'bg-white/95 border-slate-200 shadow-slate-300/60'
         }`}
       >
