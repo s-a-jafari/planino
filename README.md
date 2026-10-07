@@ -9,7 +9,13 @@
 [![Vite](https://img.shields.io/badge/Vite-Fast_Bundler-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
+<<<<<<< HEAD
 [Explore Live Demo](https://planino.vercel.app) · [Report Bug](https://github.com/s-a-jafari/planino/issues) · [Request Feature](https://github.com/s-a-jafari/planino/issues)
+=======
+[![CI Pipeline](https://github.com/s-a-jafari/planino/actions/workflows/ci.yml/badge.svg)](https://github.com/s-a-jafari/planino/actions)
+
+[Explore Live Demo](https://planino.vercel.app) · [Report Bug](https://github.com/your-username/planino/issues) · [Request Feature](https://github.com/your-username/planino/issues)
+>>>>>>> aadef5f (ci: add automated build verification workflow)
 
 </div>
 
